@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리반 아침 대시보드 7.0 (자리배치 수정본)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght=700;800&family=Noto+Sans+KR:wght=400;500;700&family=Nanum+Myeongjo:wght=700&family=Gothic+A1:wght=500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --accent-color: #FF6B6B;
+            --bg-color: #F0F4F8;
+            --card-color: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        #today-date {
+            font-family: 'Nanum Gothic', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: #2C3E50;
+            margin: 0;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 8px 14px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .tab-btn.special {
+            border-color: #E67E22;
+            color: #E67E22;
+        }
+        .tab-btn.special.active {
+            background-color: #E67E22;
+            color: white;
+        }
+
+        .settings-panel {
+            background: #fff;
+            padding: 12px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+        }
+        .settings-panel input {
+            padding: 4px 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .settings-toggle-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .base-timetable-settings {
+            display: none;
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            background: #fafafa;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .base-timetable-settings th, .base-timetable-settings td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+        }
+        .base-timetable-settings th { background: #e2e8f0; }
+        .base-timetable-settings input { width: 90%; border: 1px solid #ccc; text-align: center; padding: 4px; }
+
+        .dashboard-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .section-card {
+            background: var(--card-color);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            display: none; 
+            position: relative;
+            box-sizing: border-box;
+            min-width: 250px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .section-card.visible { display: block; }
+        
+        .section-card.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        .section-card.full-width {
+            width: 100% !important;
+            flex-grow: 1;
+        }
+
+        .resize-handle {
+            position: absolute;
+            right: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background: transparent; transition: background 0.2s; z-index: 10;
+        }
+        .section-card:hover .resize-handle { background: rgba(0, 0, 0, 0.05); }
+        .resize-handle:hover, .resize-handle:active { background: var(--primary-color) !important; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 3px solid var(--bg-color); padding-bottom: 8px; cursor: move; user-select: none;
+        }
+        .panel-header h2 { margin: 0; font-size: 1.4rem; }
+
+        .font-controls {
+            display: flex;
+            gap: 10px; align-items: center; background: #f8f9fa; padding: 6px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.8rem; color: #666;
+        }
+        .font-controls input[type="range"] { width: 80px; cursor: pointer; }
+        .font-controls select { padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; }
+
+        .editor-area {
+            width: 100%;
+            height: 280px; padding: 15px; border: none; background: #F9FBFF; font-weight: normal; line-height: 1.5; color: #2C3E50; resize: vertical; overflow-y: auto; box-sizing: border-box;
+            border-radius: 10px;
+        }
+
+        .break-layout { display: flex; gap: 20px; flex-wrap: wrap; }
+        .break-main {
+            flex: 2;
+            min-width: 300px; text-align: center; background: #FFFDF4; padding: 25px; border-radius: 15px; border: 2px dashed #F1C40F; transition: background 0.3s;
+        }
+        .break-main.danger-bg { background: #FADBD8 !important; border-color: #E74C3C !important; }
+        .next-subject-banner-container {
+            background: #FFE0C2;
+            border-radius: 10px; padding: 8px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .next-subject-input-box {
+            font-size: 1.8rem;
+            font-weight: bold; color: #D35400; background: transparent; border: none; border-bottom: 2px dashed #D35400; text-align: center; width: 60%; font-family: inherit; outline: none;
+        }
+        .break-timer-display {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 9rem; font-weight: bold; color: #2C3E50; margin: 10px 0; line-height: 1;
+        }
+        .timer-warn { color: #E74C3C !important; }
+
+        .break-sidebar {
+            flex: 1;
+            min-width: 250px; background: #FAFAFA; padding: 20px; border-radius: 15px; border: 2px solid #BDC3C7; text-align: center;
+        }
+        .noise-meter-container { width: 100%; background: #DDD; height: 25px; border-radius: 12px; overflow: hidden; margin: 15px 0; }
+        .noise-bar { width: 0%; height: 100%; background: linear-gradient(to right, #2ECC71, #F1C40F, #E74C3C); transition: width 0.1s; }
+        .score-box { font-size: 3rem; font-weight: bold; color: #C0392B; margin-top: 10px; }
+
+        .full-timer-container {
+            width: 100%;
+            text-align: center; padding: 60px 20px; box-sizing: border-box; border-radius: 15px; background: #F4F6F7; transition: background 0.3s;
+        }
+        .full-timer-container.danger-bg { background: #FADBD8 !important; }
+        .huge-timer {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 18rem; font-weight: bold; color: #232B2B; margin: 10px 0; line-height: 1; position: relative; display: inline-block;
+        }
+        .huge-timer sup {
+            font-size: 5rem;
+            font-weight: 500; color: #7F8C8D; vertical-align: super; margin-left: 15px; position: absolute; top: 1rem;
+        }
+        .timer-btn {
+            padding: 12px 28px;
+            font-size: 1.2rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin: 5px; transition: background 0.2s;
+        }
+        .btn-start { background: #2ECC71; color: white; }
+        .btn-pause { background: #F1C40F; color: white; }
+        .btn-time-set { background: #34495E; color: white; }
+        .btn-clock { background: #9B59B6; color: white; }
+        .btn-timer-reset { background: #E67E22; color: white; }
+
+        .seating-layout { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+        .seating-config { flex: 1; min-width: 320px; background: #F8FAFC; padding: 15px; border-radius: 15px; border: 1px solid #E2E8F0; transition: all 0.3s; text-align: left; }
+        .seating-config.hidden { display: none; }
+        .seating-view { flex: 2; min-width: 350px; background: #FFF; padding: 20px; border-radius: 15px; border: 2px solid #E2E8F0; text-align: center; }
+        
+        /* 배치방식 및 모둠 레이아웃 관련 스타일 */
+        .seating-grid-flex { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: center; margin-top: 20px; }
+        .seating-group-box { background: #F1F5F9; border: 2px dashed #CBD5E1; border-radius: 12px; padding: 12px; display: grid; gap: 8px; justify-content: center; align-content: center; }
+        
+        .desk-block { width: 75px; height: 75px; background: #FFF; border: 2px solid #94A3B8; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; font-weight: bold; cursor: pointer; user-select: none; transition: all 0.2s; position: relative; box-sizing: border-box; }
+        .desk-block.selected { border-color: #3B82F6; background: #DBEAFE; transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .desk-block.empty { background: #E2E8F0; border-style: dashed; border-color: #CBD5E1; color: #94A3B8; font-size: 0.9rem; }
+        
+        .config-item { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .config-item label { font-weight: bold; font-size: 0.85rem; color: #475569; }
+        .config-item input[type="text"], .config-item select, .config-item input[type="number"] { padding: 6px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 0.9rem; }
+        .config-row-inline { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
+        .config-row-inline input { width: 50px; text-align: center; }
+
+        .student-matrix-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; background: #fff; }
+        .student-matrix-table th, .student-matrix-table td { border: 1px solid #CBD5E1; padding: 6px; text-align: center; }
+        .student-matrix-table th { background: #E2E8F0; font-weight: bold; }
+        .student-matrix-table input[type="text"] { width: 90%; box-sizing: border-box; padding: 4px; border: 1px solid #CBD5E1; border-radius: 4px; font-size: 0.8rem; text-align: center; }
+        
+        .condition-alert { margin-top: 15px; padding: 10px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; color: #991B1B; font-size: 0.85rem; text-align: left; display: none; }
+        .teacher-desk { width: 140px; background: #64748B; color: white; padding: 8px; border-radius: 6px; font-weight: bold; margin: 0 auto 15px auto; font-size: 1rem; letter-spacing: 2px; }
+
+        .milk-grid, .letter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; }
+        .milk-item, .letter-item { height: 70px; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 1.1rem; font-weight: bold; user-select: none; }
+        .milk-item { background: #E3F2FD; border: 2px solid #90CAF9; flex-direction: column; }
+        .milk-item .icon { font-size: 1.3rem; margin-bottom: 2px; }
+        .milk-item.checked { background: #A5D6A7; border-color: #4CAF50; color: white; }
+        .letter-item { background: #FFF3E0; border: 2px solid #FFCC80; }
+        .letter-item.checked { background: #B0BEC5; border-color: #78909C; color: white; text-decoration: line-through; }
+
+        .timetable-container { display: flex; flex-direction: column; gap: 8px; }
+        .subject-input { width: 100%; padding: 12px 5px; font-size: 1.6rem; font-weight: 800; text-align: center; background: #E8F0FE; color: #1A73E8; border: none; border-radius: 12px; box-sizing: border-box; }
+        .btn-reset { background: var(--accent-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        #celebration-overlay { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(74, 144, 226, 0.9); color: white; font-size: 12rem; font-weight: bold; justify-content: center; align-items: center; z-index: 10000; cursor: pointer; }
+/* 대형 배치 내부에서 모둠 구역을 나타낼 테두리 스타일 예시 */
+.desk-block {
+    /* 기존 스타일 유지 */
+    transition: all 0.2s;
+}
+
+/* 모둠의 경계면에 시각적 효과를 주기 위한 구분선 설정 예시 */
+.seating-grid-flex {
+    display: grid !important; /* 항상 grid 대형 우선 */
+}
+
+/* 모둠 묶음용 가상 스타일 (선택사항) */
+.desk-block.group-border-right {
+    margin-right: 15px; /* 모둠 우측 경계에 여백 추가 */
+}
+.desk-block.group-border-bottom {
+    margin-bottom: 15px; /* 모둠 아래 경계에 여백 추가 */
+}
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="today-date">로딩 중...</h1>
+        <div class="nav-tabs">
+            <button id="btn-morning" class="tab-btn" onclick="toggleSection('morning')">아침활동</button>
+            <button id="btn-milk" class="tab-btn" onclick="toggleSection('milk')">우유 급식</button>
+            <button id="btn-letter" class="tab-btn" onclick="toggleSection('letter')">가정통신문</button>
+            <button id="btn-timetable" class="tab-btn" onclick="toggleSection('timetable')">시간표</button>
+            <button id="btn-notice" class="tab-btn" onclick="toggleSection('notice')">알림장</button>
+            <button id="btn-seating" class="tab-btn special" onclick="toggleSection('seating')">🪑 자리 배치</button>
+            <button id="btn-break" class="tab-btn special" onclick="enableExclusiveMode('break')">☕ 쉬는시간</button>
+            <button id="btn-fulltimer" class="tab-btn special" onclick="enableExclusiveMode('fulltimer')">⏱️ 타이머</button>
+        </div>
+    </header>
+
+    <div class="settings-panel">
+        <span>🔢 번호 범위: <input type="text" id="student-ranges" value="1-25" style="width:140px;" onchange="buildGrids();"></span>
+        <span>🚫 미급식: <input type="text" id="no-milk-list" value="3, 7" style="width:80px;" onchange="buildGrids()"></span>
+        <button class="settings-toggle-btn" onclick="toggleBaseTimetableSettings()">📋 기초 시간표 관리</button>
+        
+        <table id="base-timetable-table" class="base-timetable-settings">
+            <thead><tr><th>교시</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr></thead>
+            <tbody id="base-timetable-tbody"></tbody>
+        </table>
+    </div>
+
+    <div id="dashboard-main" class="dashboard-container">
+        
+        <div id="sect-seating" class="section-card full-width">
+            <div class="panel-header">
+                <h2>🪑 자동 자리 배치 시스템</h2>
+                <div>
+                    <button class="btn-reset" style="background:#4A90E2; margin-right: 5px;" onclick="toggleSeatingConfig()">⚙️ 설정 열기/숨기기</button>
+                    <button class="btn-reset" style="background:#6c757d;" onclick="toggleSection('seating')">전체 숨기기</button>
+                </div>
+            </div>
+            <div class="seating-layout">
+                <div id="seating-config-panel" class="seating-config">
+                    <h3>⚙️ 설정</h3>
+                   
+                    <div class="config-item">
+                        <label>- 대형 크기 (모둠 미사용 시 기준)</label>
+                        <div class="config-row-inline">
+                            <input type="number" id="seat-rows" value="5" min="1" max="10" onchange="saveData('seat-rows', this.value); renderSeatingView();"> 행
+                            <input type="number" id="seat-columns" value="6" min="1" max="10" onchange="saveData('seat-columns', this.value); renderSeatingView();"> 열
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <label>- 모둠 설정 (사용 여부: 인원이 0명보다 많으면 사용)</label>
+                        <div class="config-row-inline">
+                            모둠당 인원: <input type="number" id="seat-group-people" value="4" min="0" max="10" onchange="saveData('seat-group-people', this.value); renderSeatingView();"> 명
+                        </div>
+                        <div class="config-row-inline" style="margin-top: 5px;">
+                            모둠 내부 격자 크기: 
+                            (<input type="number" id="seat-group-rows" value="2" min="1" max="5" onchange="saveData('seat-group-rows', this.value); renderSeatingView();"> 행 X
+                            <input type="number" id="seat-group-cols" value="2" min="1" max="5" onchange="saveData('seat-group-cols', this.value); renderSeatingView();"> 열)
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <label>- 총 모둠 개수</label>
+                        <div class="config-row-inline">
+                            <input type="number" id="seat-group-count" value="6" min="1" max="12" onchange="saveData('seat-group-count', this.value); renderSeatingView();"> 개
+                        </div>
+                    </div>
+
+                    <div class="config-item">
+                        <label>- 남녀 분배</label>
+                        <div class="config-row-inline">
+                            <label><input type="radio" name="mix-gender-radio" value="Y" checked> O</label>
+                            <label style="margin-left:15px;"><input type="radio" name="mix-gender-radio" value="N"> X</label>
+                        </div>
+                    </div>
+                    <div class="config-item">
+                        <label>- 기피 학생 (근처 자리X)</label>
+                        <input type="text" id="seat-avoid-pairs" placeholder="예: 1-5, 2-12" onchange="saveData('seat-avoid-pairs', this.value)">
+                    </div>
+                    <div class="config-item">
+                        <label>- 도움 학생 (같은 모둠)</label>
+                        <input type="text" id="seat-match-pairs" placeholder="예: 3-7, 15-22" onchange="saveData('seat-match-pairs', this.value)">
+                    </div>
+                    
+                    <h4 style="margin-top:15px; margin-bottom:5px;">📊 학생 정보 설정 (성별 / 성적)</h4>
+                    <p style="font-size:0.75rem; color:#666; margin:0 0 5px 0;">※ 칸에 해당하는 학생 번호를 쉼표(,)나 대시(-)로 적어주세요.</p>
+                    <table class="student-matrix-table">
+                        <thead>
+                            <tr>
+                                <th>구분</th>
+                                <th>상</th>
+                                <th>중</th>
+                                <th>하</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>남</th>
+                                <td><input type="text" id="matrix-m-top" placeholder="번호"></td>
+                                <td><input type="text" id="matrix-m-mid" placeholder="번호"></td>
+                                <td><input type="text" id="matrix-m-bot" placeholder="번호"></td>
+                            </tr>
+                            <tr>
+                                <th>여</th>
+                                <td><input type="text" id="matrix-f-top" placeholder="번호"></td>
+                                <td><input type="text" id="matrix-f-mid" placeholder="번호"></td>
+                                <td><input type="text" id="matrix-f-bot" placeholder="번호"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <button class="timer-btn btn-start" style="width:100%; margin:15px 0 0 0;" onclick="generateSmartSeating()">⚡ 자동 자리 배치 시작</button>
+                </div>
+                
+                <div class="seating-view">
+                    <div class="teacher-desk">교 탁</div>
+                    <div id="seating-grid-container" class="seating-grid-flex">
+                        <div style="color:#94A3B8; padding: 40px 0;">자리가 배치되면 여기에 표시됩니다.</div>
+                    </div>
+                    <div id="seating-alert-box" class="condition-alert"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sect-morning" class="section-card" draggable="true">
+            <div class="panel-header"><h2>☀️ 아침활동</h2><button class="btn-reset" onclick="resetContent('morning-text')">초기화</button></div>
+            <div class="font-controls">
+                <span>크기: <input type="range" id="size-morning" min="1.5" max="4.0" step="0.1" value="2.7" oninput="changeFontSize('morning-text', this.value)"></span>
+                <span>글꼴: 
+                    <select id="family-morning" onchange="changeFontFamily('morning-text', this.value)">
+                        <option value="'Noto Sans KR', sans-serif">기본 고딕</option>
+                        <option value="'Nanum Myeongjo', serif">나눔 명조</option>
+                        <option value="'Gothic A1', sans-serif">둥근 고딕</option>
+                    </select>
+                </span>
+            </div>
+            <textarea id="morning-text" class="editor-area" placeholder="활동 내용을 적어주세요..." oninput="saveData('morning-text', this.value)"></textarea>
+            <div class="resize-handle" onmousedown="initResize(event, 'sect-morning')"></div>
+        </div>
+
+        <div id="sect-timetable" class="section-card" draggable="true">
+            <div class="panel-header"><h2>📅 시간표</h2><button class="btn-reset" style="background:#6c757d; padding:4px 8px;" onclick="resetToTodayBase()">원복</button></div>
+            <div id="timetable-list" class="timetable-container"></div>
+            <div class="resize-handle" onmousedown="initResize(event, 'sect-timetable')"></div>
+        </div>
+
+        <div id="sect-milk" class="section-card" draggable="true">
+            <div class="panel-header"><h2>🥛 우유 체크</h2><button class="btn-reset" onclick="resetGrid('milk')">초기화</button></div>
+            <div id="milk-grid" class="milk-grid"></div>
+            <div class="resize-handle" onmousedown="initResize(event, 'sect-milk')"></div>
+        </div>
+
+        <div id="sect-letter" class="section-card" draggable="true">
+            <div class="panel-header"><h2>📄 가정통신문</h2><button class="btn-reset" onclick="resetGrid('letter')">초기화</button></div>
+            <div id="letter-grid" class="letter-grid"></div>
+            <div class="resize-handle" onmousedown="initResize(event, 'sect-letter')"></div>
+        </div>
+
+        <div id="sect-notice" class="section-card full-width" draggable="true">
+            <div class="panel-header"><h2>📌 알림장</h2><button class="btn-reset" onclick="resetContent('notice-text')">초기화</button></div>
+            <div class="font-controls">
+                <span>크기: <input type="range" id="size-notice" min="1.5" max="4.0" step="0.1" value="2.7" oninput="changeFontSize('notice-text', this.value)"></span>
+                <span>글꼴: 
+                    <select id="family-notice" onchange="changeFontFamily('notice-text', this.value)">
+                        <option value="'Noto Sans KR', sans-serif">기본 고딕</option>
+                        <option value="'Nanum Myeongjo', serif">나눔 명조</option>
+                        <option value="'Gothic A1', sans-serif">둥근 고딕</option>
+                    </select>
+                </span>
+            </div>
+            <textarea id="notice-text" class="editor-area" style="height: 400px;" placeholder="알림장 내용을 적어주세요..." oninput="saveData('notice-text', this.value)"></textarea>
+        </div>
+
+        <div id="sect-break" class="section-card full-width">
+            <div class="panel-header"><h2>☕ 즐거운 쉬는 시간</h2><button class="btn-reset" style="background:#555;" onclick="disableExclusiveMode()">창닫기 (메인 복귀)</button></div>
+            <div class="break-layout">
+                <div class="break-main" id="break-main-card">
+                    <div class="next-subject-banner-container">
+                        <span style="font-size:1.5rem; font-weight:bold; color:#7E5109;">🔔 다음 시간 :</span>
+                        <input type="text" id="next-subject-input" class="next-subject-input-box" value="정보가 없습니다">
+                    </div>
+                    <div id="break-timer-num" class="break-timer-display">10:00</div>
+                    <div>
+                        <button class="timer-btn btn-start" onclick="startBreakTimer()">시작</button>
+                        <button class="timer-btn btn-pause" onclick="pauseBreakTimer()">일시정지</button>
+                        <button class="timer-btn btn-timer-reset" onclick="resetBreakTimer()">초기화</button>
+                        <button class="timer-btn btn-time-set" onclick="setBreakTimePrompt()">시간 설정</button>
+                    </div>
+                </div>
+                <div class="break-sidebar">
+                    <h3>🔊 교실 소음 경고판</h3>
+                    <button class="timer-btn btn-start" onclick="initNoiseMeter()">소음 측정 켜기</button>
+                    <div class="noise-meter-container"><div id="noise-bar-fill" class="noise-bar"></div></div>
+                    <div>현재 소음: <span id="db-value" style="font-weight:bold;">0</span> dB</div>
+                    <div style="margin-top:15px; font-weight:bold;">🚨 누적 경고 점수</div>
+                    <div id="noise-score" class="score-box">0</div>
+                    <button class="btn-reset" style="margin-top:10px;" onclick="resetNoiseScore()">점수 리셋</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="sect-fulltimer" class="section-card full-width">
+            <div class="panel-header"><h2>⏱️ 교실 대형 타이머 / 시계</h2><button class="btn-reset" style="background:#555;" onclick="disableExclusiveMode()">창닫기 (메인 복귀)</button></div>
+            <div id="full-timer-card" class="full-timer-container">
+                <div id="huge-timer-display" class="huge-timer">00:00</div>
+                <div>
+                    <button class="timer-btn btn-start" id="huge-start-btn" onclick="startHugeTimer()">타이머 시작</button>
+                    <button class="timer-btn btn-pause" onclick="pauseHugeTimer()">일시정지</button>
+                    <button class="timer-btn btn-timer-reset" onclick="resetHugeTimer()">초기화</button>
+                    <button class="timer-btn btn-time-set" onclick="setHugeTimePrompt()">시간 조절</button>
+                    <button class="timer-btn btn-clock" onclick="toggleClockMode()">⏰ 현재 시각 보기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="celebration-overlay" onclick="this.style.display='none'">100% 🎉</div>
+
+    <script>
+        const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+        const today = new Date();
+        const todayDay = today.getDay();
+        const effectiveDay = (todayDay === 0 || todayDay === 6) ? 1 : todayDay; // 주말은 월요일 기본값
+        
+        // 전역 상태 변수들
+        let currentSeatingArrangement = [];
+        let selectedSeatIndex = null;
+        let breakTimer = null;
+        let breakTimeLeft = 600; // 10분
+        let breakBeepTriggered = false;
+
+        let hugeInterval = null;
+        let hugeTimeLeft = 0;
+        let isCountUpMode = true;
+        let isClockMode = false;
+        let clockInterval = null;
+        let hugeBeepTriggered = false;
+
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let javascriptNode = null;
+        let noiseScore = 0;
+        let lastScoreTime = 0;
+
+        const defaultTimetables = {
+            1: ["국어", "수학", "사회", "과학", "체육"],
+            2: ["수학", "사회", "과학", "체육", "음악"],
+            3: ["사회", "과학", "체육", "음악", "미술"],
+            4: ["과학", "체육", "음악", "미술", "실과"],
+            5: ["체육", "음악", "미술", "실과", "창체"],
+            6: ["음악", "미술", "실과", "창체", "영어"]
+        };
+
+        window.onload = function() {
+            // 날짜 표시
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const date = String(today.getDate()).padStart(2, '0');
+            const dayName = dayNames[todayDay];
+            document.getElementById('today-date').innerText = `${year}년 ${month}월 ${date}일 ${dayName}요일`;
+
+            initBaseTimetableInputs();
+            loadSettings();
+            loadFontSettings();
+            buildGrids();
+            
+            // 저장된 시안 불러오기
+            const savedSeating = localStorage.getItem('currentSeatingArrangement');
+            if(savedSeating) {
+                currentSeatingArrangement = JSON.parse(savedSeating);
+            }
+            renderSeatingView();
+
+            // 기본 활성화 구역
+            const savedMainOrder = localStorage.getItem('dashboard_card_order');
+            if(!savedMainOrder) {
+                ['morning', 'milk', 'letter', 'timetable', 'notice'].forEach(name => {
+                    document.getElementById(`sect-${name}`).classList.add('visible');
+                    document.getElementById(`btn-${name}`).classList.add('active');
+                });
+            } else {
+                loadCardOrder();
+                ['morning', 'milk', 'letter', 'timetable', 'notice', 'seating'].forEach(name => {
+                    const card = document.getElementById(`sect-${name}`);
+                    if(card && localStorage.getItem(`sect-${name}-visible`) === 'true') {
+                        card.classList.add('visible');
+                        document.getElementById(`btn-${name}`)?.classList.add('active');
+                    }
+                });
+            }
+            
+            initDragAndDrop();
+            initResizeElements();
+        };
+
+        function enableExclusiveMode(targetName) {
+            document.querySelectorAll('.section-card').forEach(card => card.classList.remove('visible'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(`sect-${targetName}`).classList.add('visible');
+            document.getElementById(`btn-${targetName}`).classList.add('active');
+            
+            if (targetName === 'break') {
+                updateNextSubjectBanner();
+                resetBreakTimer();
+            } else if (targetName === 'fulltimer') {
+                resetHugeTimer();
+            }
+        }
+
+        function disableExclusiveMode() {
+            document.getElementById('sect-break').classList.remove('visible');
+            document.getElementById('sect-fulltimer').classList.remove('visible');
+            document.getElementById('btn-break').classList.remove('active');
+            document.getElementById('btn-fulltimer').classList.remove('active');
+            
+            // 이전에 활성화되어 있던 기본 레이아웃 카드들 복구
+            ['morning', 'milk', 'letter', 'timetable', 'notice', 'seating'].forEach(name => {
+                const isVisible = localStorage.getItem(`sect-${name}-visible`) === 'true';
+                if(isVisible || (!localStorage.getItem('dashboard_card_order') && name !== 'seating')) {
+                    document.getElementById(`sect-${name}`).classList.add('visible');
+                    document.getElementById(`btn-${name}`)?.classList.add('active');
+                }
+            });
+        }
+
+        function toggleSection(name) {
+            document.getElementById('sect-break').classList.remove('visible');
+            document.getElementById('sect-fulltimer').classList.remove('visible');
+            document.getElementById('btn-break').classList.remove('active');
+            document.getElementById('btn-fulltimer').classList.remove('active');
+            
+            const card = document.getElementById(`sect-${name}`);
+            const btn = document.getElementById(`btn-${name}`);
+            card.classList.toggle('visible');
+            btn.classList.toggle('active');
+            
+            localStorage.setItem(`sect-${name}-visible`, card.classList.contains('visible'));
+        }
+
+        function toggleSeatingConfig() {
+            const panel = document.getElementById('seating-config-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function parseStudentRanges() {
+            const val = document.getElementById('student-ranges').value.trim();
+            if(!val) return [];
+            let students = [];
+            const chunks = val.split(',');
+            chunks.forEach(c => {
+                if(c.includes('-')) {
+                    const parts = c.split('-');
+                    const start = parseInt(parts[0]);
+                    const end = parseInt(parts[1]);
+                    if(!isNaN(start) && !isNaN(end)) {
+                        for(let i=start; i<=end; i++) students.push(i);
+                    }
+                } else {
+                    const num = parseInt(c.trim());
+                    if(!isNaN(num)) students.push(num);
+                }
+            });
+            return [...new Set(students)].sort((a,b)=>a-b);
+        }
+
+        function parseTextToNumbers(str) {
+            if(!str) return [];
+            let nums = [];
+            const chunks = str.split(',');
+            chunks.forEach(c => {
+                if(c.includes('-')) {
+                    const parts = c.split('-');
+                    const start = parseInt(parts[0]);
+                    const end = parseInt(parts[1]);
+                    if(!isNaN(start) && !isNaN(end)) {
+                        for(let i=start; i<=end; i++) nums.push(i);
+                    }
+                } else {
+                    const num = parseInt(c.trim());
+                    if(!isNaN(num)) nums.push(num);
+                }
+            });
+            return nums;
+        }
+
+        function getStudentInfoMap() {
+            const infoMap = {};
+            const mTop = parseTextToNumbers(document.getElementById('matrix-m-top').value);
+            const mMid = parseTextToNumbers(document.getElementById('matrix-m-mid').value);
+            const mBot = parseTextToNumbers(document.getElementById('matrix-m-bot').value);
+            const fTop = parseTextToNumbers(document.getElementById('matrix-f-top').value);
+            const fMid = parseTextToNumbers(document.getElementById('matrix-f-mid').value);
+            const fBot = parseTextToNumbers(document.getElementById('matrix-f-bot').value);
+
+            mTop.forEach(n => infoMap[n] = { gender: 'M', level: '상' });
+            mMid.forEach(n => infoMap[n] = { gender: 'M', level: '중' });
+            mBot.forEach(n => infoMap[n] = { gender: 'M', level: '하' });
+            fTop.forEach(n => infoMap[n] = { gender: 'F', level: '상' });
+            fMid.forEach(n => infoMap[n] = { gender: 'F', level: '중' });
+            fBot.forEach(n => infoMap[n] = { gender: 'F', level: '하' });
+            return infoMap;
+        }
+
+        function parsePairs(str) {
+            if(!str) return [];
+            return str.split(',').map(p => {
+                const parts = p.split('-');
+                return [parseInt(parts[0]), parseInt(parts[1])];
+            }).filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        /* ⚡ 핵심 자리 배치 알고리즘 엔진 (모둠 및 대형 설정 완벽 반영 버전) */
+        function generateSmartSeating() {
+            const students = parseStudentRanges();
+            if(students.length === 0) return alert('번호 범위에 등록된 학생이 없습니다.');
+            
+            // HTML 설정 값 불러오기
+            const mixGender = document.querySelector('input[name="mix-gender-radio"]:checked')?.value || 'Y';
+            const avoidPairs = parsePairs(document.getElementById('seat-avoid-pairs').value);
+            const matchPairs = parsePairs(document.getElementById('seat-match-pairs').value);
+            
+            // 모둠 설정 값 불러오기
+            const groupPeople = parseInt(document.getElementById('seat-group-people').value) || 0;
+            const groupRows = parseInt(document.getElementById('seat-group-rows').value) || 1;
+            const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 1;
+            const groupCount = parseInt(document.getElementById('seat-group-count').value) || 1;
+            
+            // 모둠 사용 여부 판별 (모둠 인원이 0보다 크면 모둠 배치 사용)
+            const useGroup = groupPeople > 0;
+            
+            let bestArrangement = null;
+            let bestScore = -99999;
+            
+            // 학생 성별/성적 정보 가져오기
+            const studentInfo = getStudentInfoMap();
+            
+            // 100회 무작위화 후 규칙 채점 수행
+            for (let attempt = 0; attempt < 100; attempt++) {
+                let pool = [...students];
+                shuffleArray(pool);
+                
+                let currentScore = 0;
+                let studentCoords = {};
+                
+                if (useGroup) {
+                    // 👥 [모둠 배치 모드] 시뮬레이션
+                    let sIdx = 0;
+                    for (let g = 0; g < groupCount; g++) {
+                        for (let r = 0; r < groupRows; r++) {
+                            for (let c = 0; c < groupCols; c++) {
+                                // 모둠당 채워야 하는 칸 수 제한
+                                const cellIdxInGroup = r * groupCols + c;
+                                if (cellIdxInGroup < groupPeople && sIdx < pool.length) {
+                                    // 모둠 번호(g), 내부 행(r), 내부 열(c)을 기반으로 좌표 부여
+                                    studentCoords[pool[sIdx]] = { 
+                                        x: g * groupCols + c, 
+                                        y: r, 
+                                        group: g 
+                                    };
+                                    sIdx++;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // 📊 [일반 분단/줄 배치 모드] 시뮬레이션 (대형 설정 행X열 사용)
+                    const cols = parseInt(document.getElementById('seat-columns').value) || 6;
+                    let sIdx = 0;
+                    let r = 0;
+                    while (sIdx < pool.length) {
+                        for (let c = 0; c < cols; c++) {
+                            if (sIdx < pool.length) {
+                                studentCoords[pool[sIdx]] = { 
+                                    x: c, 
+                                    y: r, 
+                                    group: Math.floor(c / 2) // 짝꿍 기준 임시 그룹화
+                                };
+                                sIdx++;
+                            }
+                        }
+                        r++;
+                    }
+                }
+                
+                // 2차원 좌표 기반 기피/희망 번호 채점
+                for (let i = 0; i < pool.length; i++) {
+                    for (let j = i + 1; j < pool.length; j++) {
+                        const s1 = pool[i];
+                        const s2 = pool[j];
+                        const c1 = studentCoords[s1];
+                        const c2 = studentCoords[s2];
+                        
+                        if (!c1 || !c2) continue;
+                        
+                        // 맨해튼 거리 계산 (|x1-x2| + |y1-y2|)
+                        const dist = Math.abs(c1.x - c2.x) + Math.abs(c1.y - c2.y);
+                        
+                        // 1. 기피 관계인데 바로 옆이나 앞뒤(거리 1.5 이하)에 앉은 경우 감점
+                        if (avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
+                            if (dist <= 1.5) currentScore -= 1000;
+                            else if (c1.group === c2.group) currentScore -= 400; // 같은 모둠 내 배정 시 감점
+                        }
+                        
+                        // 2. 도움/희망 관계인데 같은 모둠이거나 근접(거리 1.5 이하)한 경우 가점
+                        if (matchPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
+                            if (dist <= 1.5) currentScore += 500;
+                            else if (c1.group === c2.group) currentScore += 300;
+                        }
+                    }
+                }
+                
+                // 3. 성별 균등 분배 가점
+                if (mixGender === 'Y') {
+                    let genderScore = 0;
+                    if (!useGroup) {
+                        // 일반 줄 배치 시 인접한 좌우 짝꿍 성별 다르면 가점
+                        for (let i = 0; i < pool.length - 1; i += 2) {
+                            const g1 = studentInfo[pool[i]]?.gender;
+                            const g2 = studentInfo[pool[i+1]]?.gender;
+                            if (g1 && g2 && g1 !== g2) genderScore += 50;
+                        }
+                    } else {
+                        // 모둠형일 때 모둠 내 남녀 성비 균등화용 가점
+                        for (let i = 0; i < pool.length - 1; i += 2) {
+                            const g1 = studentInfo[pool[i]]?.gender;
+                            const g2 = studentInfo[pool[i+1]]?.gender;
+                            if (g1 && g2 && g1 !== g2) genderScore += 20;
+                        }
+                    }
+                    currentScore += genderScore;
+                }
+                
+                if (currentScore > bestScore) {
+                    bestScore = currentScore;
+                    bestArrangement = [...pool];
+                }
+            }
+            
+            currentSeatingArrangement = bestArrangement;
+            localStorage.setItem('currentSeatingArrangement', JSON.stringify(currentSeatingArrangement));
+            selectedSeatIndex = null;
+            renderSeatingView(); // 변경된 화면 그리기
+            
+            // 기피 규칙 깨짐 알림 기능
+            const alertBox = document.getElementById('seating-alert-box');
+            alertBox.style.display = 'none';
+            let brokenAlerts = [];
+            
+            // 검증 로직 수행 후 경고 처리
+            for (let i = 0; i < currentSeatingArrangement.length; i++) {
+                for (let j = i + 1; j < currentSeatingArrangement.length; j++) {
+                    const s1 = currentSeatingArrangement[i];
+                    const s2 = currentSeatingArrangement[j];
+                    if (Math.abs(i - j) <= 2 && avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
+                        brokenAlerts.push(`⚠️ 경고: 기피 등록된 [${s1}번]과 [${s2}번]이 인접하게 배치되었습니다.`);
+                    }
+                }
+            }
+            
+            if (brokenAlerts.length > 0) {
+                alertBox.innerHTML = brokenAlerts.join('<br>');
+                alertBox.style.display = 'block';
+            }
+            
+            // 설정값 자동 저장
+            saveData('matrix-m-top', document.getElementById('matrix-m-top').value);
+            saveData('matrix-m-mid', document.getElementById('matrix-m-mid').value);
+            saveData('matrix-m-bot', document.getElementById('matrix-m-bot').value);
+            saveData('matrix-f-top', document.getElementById('matrix-f-top').value);
+            saveData('matrix-f-mid', document.getElementById('matrix-f-mid').value);
+            saveData('matrix-f-bot', document.getElementById('matrix-f-bot').value);
+        }
+
+        /* 🪑 설정에 맞게 화면을 구성하는 렌더러 함수 */
+      function renderSeatingView() {
+    const container = document.getElementById('seating-grid-container');
+    container.innerHTML = '';
+    
+    if (currentSeatingArrangement.length === 0) {
+        container.innerHTML = `<div style="color:#94A3B8; padding: 40px 0;">[자동 자리 배치 시작] 버튼을 누르면 자리가 배치됩니다.</div>`;
+        return;
+    }
+    
+    // 1. 대형 크기(행, 열) 수집 (무조건 대형이 우선!)
+    const totalRows = parseInt(document.getElementById('seat-rows').value) || 5;
+    const totalCols = parseInt(document.getElementById('seat-columns').value) || 6;
+    
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = `repeat(${totalCols}, 75px)`;
+    container.style.gap = '10px'; // 기본 간격
+    
+    // 모둠 묶기 단위 설정 정보 (예: 가로 2열, 세로 2행 단위로 모둠을 묶음)
+    const groupRows = parseInt(document.getElementById('seat-group-rows').value) || 2;
+    const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 2;
+    const useGrouping = groupRows > 0 && groupCols > 0; // 모둠 묶기 활성화 여부
+    
+    for (let r = 0; r < totalRows; r++) {
+        for (let c = 0; c < totalCols; c++) {
+            const globalIdx = r * totalCols + c;
+            const studentNum = currentSeatingArrangement[globalIdx];
+            const desk = document.createElement('div');
+            
+            if (studentNum !== undefined) {
+                createDeskBlock(desk, studentNum, globalIdx);
+                
+                // 2. 대형이 배치된 상태에서 모둠 단위로 시각적 "테두리" 또는 "공백" 묶기 처리
+                if (useGrouping) {
+                    // 모둠의 오른쪽 경계면일 때 여백 추가
+                    if ((c + 1) % groupCols === 0 && (c + 1) < totalCols) {
+                        desk.style.marginRight = '15px'; 
+                    }
+                    // 모둠의 아래쪽 경계면일 때 여백 추가
+                    if ((r + 1) % groupRows === 0 && (r + 1) < totalRows) {
+                        desk.style.marginBottom = '15px';
+                    }
+                    
+                    // 예시: 모둠별로 연한 배경색 번갈아 주기 (시각적 묶음 효과)
+                    const groupRegX = Math.floor(c / groupCols);
+                    const groupRegY = Math.floor(r / groupRows);
+                    const groupID = groupRegY * Math.ceil(totalCols / groupCols) + groupRegX;
+                    
+                    // 모둠 ID에 따라 파스텔톤 배경을 번갈아 부여하여 그룹 느낌 제공
+                    const colors = ['#F1F5F9', '#EFF6FF', '#FEF2F2', '#ECFDF5', '#FFFBEB', '#FDF2F8'];
+                    desk.style.backgroundColor = colors[groupID % colors.length];
+                    desk.style.border = '2px solid #CBD5E1';
+                }
+            } else {
+                desk.className = 'desk-block empty';
+                desk.innerText = '빈자리';
+                
+                // 빈자리에도 동일하게 경계 여백 적용
+                if (useGrouping) {
+                    if ((c + 1) % groupCols === 0 && (c + 1) < totalCols) desk.style.marginRight = '15px';
+                    if ((r + 1) % groupRows === 0 && (r + 1) < totalRows) desk.style.marginBottom = '15px';
+                }
+            }
+            container.appendChild(desk);
+        }
+    }
+}
+
+        /* 개별 학생 책상 블록 구조 생성 */
+        function createDeskBlock(element, num, index) {
+            const studentInfo = getStudentInfoMap();
+            const sData = studentInfo[num] || { gender: 'M', level: '중' };
+            
+            element.className = 'desk-block';
+            if (selectedSeatIndex === index) {
+                element.classList.add('selected');
+            }
+            
+            element.innerHTML = `
+                <div>${num}</div>
+                <div class="gender-badge gender-${sData.gender}" style="display:none;">${sData.gender === 'M' ? '남' : '여'}</div>
+                <div class="level-badge lvl-${sData.level}" style="display:none;">${sData.level}</div>
+            `;
+            
+            element.onclick = () => handleSeatClick(index);
+        }
+
+        /* 수동 자리 교체 스와프 핸들러 */
+        function handleSeatClick(index) {
+            if (selectedSeatIndex === null) {
+                selectedSeatIndex = index;
+                renderSeatingView();
+            } else {
+                if (selectedSeatIndex !== index) {
+                    const temp = currentSeatingArrangement[selectedSeatIndex];
+                    currentSeatingArrangement[selectedSeatIndex] = currentSeatingArrangement[index];
+                    currentSeatingArrangement[index] = temp;
+                    localStorage.setItem('currentSeatingArrangement', JSON.stringify(currentSeatingArrangement));
+                }
+                selectedSeatIndex = null;
+                renderSeatingView();
+            }
+        }
+
+        // 시간표 로직들
+        function updateNextSubjectBanner() {
+            const now = new Date();
+            const hour = now.getHours();
+            let currentPeriod = 1;
+            if(hour >= 15) currentPeriod = 6;
+            else if(hour >= 14) currentPeriod = 5;
+            else if(hour >= 13) currentPeriod = 4;
+            else if(hour >= 11) currentPeriod = 3;
+            else if(hour >= 10) currentPeriod = 2;
+            
+            const nextPeriod = Math.min(currentPeriod + 1, 6);
+            const key = `t-day${effectiveDay}-p${nextPeriod}`;
+            const nextVal = localStorage.getItem(key) || defaultTimetables[nextPeriod]?.[effectiveDay - 1] || "";
+            document.getElementById('next-subject-input').value = nextVal ? `${nextPeriod}교시 [${nextVal}]` : "정보 없음";
+        }
+
+        // 쉬는시간 타이머 로직
+        function startBreakTimer() {
+            if(breakTimer) return;
+            breakBeepTriggered = false;
+            breakTimer = setInterval(() => {
+                if(breakTimeLeft <= 0) {
+                    clearInterval(breakTimer);
+                    breakTimer = null;
+                    playBeepMultiple(3);
+                    alert("쉬는 시간이 종료되었습니다!");
+                    return;
+                }
+                breakTimeLeft--;
+                renderBreakTimer();
+            }, 1000);
+        }
+
+        function pauseBreakTimer() {
+            clearInterval(breakTimer);
+            breakTimer = null;
+        }
+
+        function resetBreakTimer() {
+            pauseBreakTimer();
+            breakTimeLeft = 600;
+            renderBreakTimer();
+        }
+
+        function setBreakTimePrompt() {
+            const val = prompt("설정할 쉬는시간(분 단위)을 입력하세요:", "10");
+            if(val) {
+                const parsed = parseInt(val);
+                if(!isNaN(parsed)) {
+                    breakTimeLeft = parsed * 60;
+                    renderBreakTimer();
+                }
+            }
+        }
+
+        function renderBreakTimer() {
+            let min = Math.floor(breakTimeLeft / 60);
+            let sec = breakTimeLeft % 60;
+            const textTarget = document.getElementById('break-timer-num');
+            const bgContainer = document.getElementById('break-main-card');
+            
+            textTarget.innerText = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+            
+            if(breakTimeLeft <= 60 && breakTimeLeft > 0) {
+                bgContainer.classList.add('danger-bg');
+                textTarget.classList.add('timer-warn');
+                if(!breakBeepTriggered) {
+                    playBeepSingle();
+                    breakBeepTriggered = true;
+                }
+            } else {
+                bgContainer.classList.remove('danger-bg');
+                textTarget.classList.remove('timer-warn');
+            }
+        }
+
+        // 소음 경고판 로직
+        function initNoiseMeter() {
+            if (audioContext) return alert("이미 활성화되어 있습니다.");
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+                
+                analyser.smoothingTimeConstant = 0.8;
+                analyser.fftSize = 1024;
+                
+                microphone.connect(analyser);
+                analyser.connect(javascriptNode);
+                javascriptNode.connect(audioContext.destination);
+                
+                javascriptNode.onaudioprocess = function() {
+                    let array = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(array);
+                    let values = 0;
+                    let length = array.length;
+                    for (let i = 0; i < length; i++) {
+                        values += array[i];
+                    }
+                    let average = values / length;
+                    let db = Math.round(average * 3.5);
+                    document.getElementById('db-value').innerText = db;
+                    document.getElementById('noise-bar-fill').style.width = Math.min((db/250)*100, 100) + '%';
+                    
+                    if(db > 300) {
+                        let now = Date.now();
+                        if(now - lastScoreTime > 2000) {
+                            noiseScore++;
+                            document.getElementById('noise-score').innerText = noiseScore;
+                            lastScoreTime = now;
+                        }
+                    }
+                }
+            }).catch(function(err) {
+                alert("마이크 권한을 허용해 주세요.");
+            });
+        }
+
+        function resetNoiseScore() {
+            noiseScore = 0;
+            document.getElementById('noise-score').innerText = 0;
+        }
+
+        // 대형 타이머 로직들
+        function startHugeTimer() {
+            if(isClockMode) toggleClockMode();
+            if(hugeInterval) return;
+            if (hugeTimeLeft === 0) {
+                isCountUpMode = true;
+                document.getElementById('huge-start-btn').innerText = "초시계 작동중";
+            } else {
+                isCountUpMode = false;
+                document.getElementById('huge-start-btn').innerText = "타이머 작동중";
+            }
+            hugeBeepTriggered = false;
+            hugeInterval = setInterval(() => {
+                if (isCountUpMode) {
+                    hugeTimeLeft++;
+                } else {
+                    if(hugeTimeLeft <= 0) {
+                        clearInterval(hugeInterval);
+                        hugeInterval = null;
+                        document.getElementById('huge-start-btn').innerText = "타이머 시작";
+                        playBeepMultiple(3);
+                        return;
+                    }
+                    hugeTimeLeft--;
+                }
+                renderHugeTimer();
+            }, 1000);
+        }
+
+        function pauseHugeTimer() {
+            clearInterval(hugeInterval);
+            hugeInterval = null;
+            document.getElementById('huge-start-btn').innerText = "타이머 시작";
+        }
+
+        function resetHugeTimer() {
+            pauseHugeTimer();
+            hugeTimeLeft = 0;
+            renderHugeTimer();
+        }
+
+        function setHugeTimePrompt() {
+            const val = prompt("시간(분 단위)을 입력하세요 (0을 입력하면 스톱워치가 됩니다):", "5");
+            if(val !== null) {
+                const parsed = parseInt(val);
+                if(!isNaN(parsed)) {
+                    hugeTimeLeft = parsed * 60;
+                    renderHugeTimer();
+                }
+            }
+        }
+
+        function renderHugeTimer() {
+            if(isClockMode) return;
+            const display = document.getElementById('huge-timer-display');
+            const bgContainer = document.getElementById('full-timer-card');
+            
+            let min = Math.floor(hugeTimeLeft / 60);
+            let sec = hugeTimeLeft % 60;
+            display.innerText = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+            
+            if(!isCountUpMode && hugeTimeLeft <= 10 && hugeTimeLeft > 0) {
+                bgContainer.classList.add('danger-bg');
+                if(!hugeBeepTriggered) {
+                    playBeepSingle();
+                    hugeBeepTriggered = true;
+                }
+            } else {
+                bgContainer.classList.remove('danger-bg');
+            }
+        }
+
+        function toggleClockMode() {
+            const display = document.getElementById('huge-timer-display');
+            if(isClockMode) {
+                clearInterval(clockInterval);
+                isClockMode = false;
+                renderHugeTimer();
+            } else {
+                pauseHugeTimer();
+                isClockMode = true;
+                clockInterval = setInterval(() => {
+                    const now = new Date();
+                    display.innerHTML = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}<sup>${String(now.getSeconds()).padStart(2,'0')}</sup>`;
+                }, 1000);
+            }
+        }
+
+        // 체크판 구축 및 관리 로직
+        function buildGrids() {
+            const studentNumbers = parseStudentRanges();
+            const noMilk = document.getElementById('no-milk-list').value.split(',').map(x=>parseInt(x.trim()));
+            
+            const mGrid = document.getElementById('milk-grid');
+            mGrid.innerHTML = '';
+            studentNumbers.forEach(i => {
+                if(noMilk.includes(i)) return;
+                const item = document.createElement('div');
+                item.className = 'milk-item milk-item-' + i;
+                item.innerHTML = `<span class="icon">🥛</span><span>${i}번</span>`;
+                item.onclick = () => toggleCheck(item, 'pop', 'milk');
+                mGrid.appendChild(item);
+            });
+
+            const lGrid = document.getElementById('letter-grid');
+            lGrid.innerHTML = '';
+            studentNumbers.forEach(i => {
+                const item = document.createElement('div');
+                item.className = 'letter-item';
+                item.innerText = `${i}번`;
+                item.onclick = () => toggleCheck(item, null, 'letter');
+                lGrid.appendChild(item);
+            });
+        }
+
+        function toggleCheck(el, sound, type) {
+            el.classList.toggle('checked');
+            if(el.classList.contains('checked')) {
+                if(sound === 'pop') playPop();
+                if(type === 'milk') el.querySelector('.icon').innerText = '✅';
+            } else {
+                if(type === 'milk') el.querySelector('.icon').innerText = '🥛';
+            }
+            checkAllDone(type);
+        }
+
+        function checkAllDone(type) {
+            const items = document.querySelectorAll(`.${type}-item`);
+            const checked = document.querySelectorAll(`.${type}-item.checked`);
+            if(items.length > 0 && items.length === checked.length) {
+                document.getElementById('celebration-overlay').style.display = 'flex';
+            }
+        }
+
+        function resetContent(id) {
+            if(confirm('내용을 완전히 초기화할까요?')) {
+                document.getElementById(id).value = '';
+                saveData(id, '');
+            }
+        }
+
+        function resetGrid(type) {
+            document.querySelectorAll(`.${type}-item`).forEach(el => {
+                el.classList.remove('checked');
+                if(type==='milk') el.querySelector('.icon').innerText='🥛';
+            });
+        }
+
+        // 기초 시간표 관리 로직
+        function initBaseTimetableInputs() {
+            const tbody = document.getElementById('base-timetable-tbody');
+            tbody.innerHTML = '';
+            for(let p=1; p<=6; p++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${p}교시</td>` + [1,2,3,4,5].map(d => {
+                    const key = `t-day${d}-p${p}`;
+                    const def = defaultTimetables[p]?.[d-1] || "";
+                    return `<td><input type="text" id="${key}" value="${localStorage.getItem(key) || def}" onchange="saveData('${key}', this.value); updateTodayView();"></td>`;
+                }).join('');
+                tbody.appendChild(tr);
+            }
+            updateTodayView();
+        }
+
+        function toggleBaseTimetableSettings() {
+            const table = document.getElementById('base-timetable-table');
+            table.style.display = table.style.display === 'table' ? 'none' : 'table';
+        }
+
+        function updateTodayView() {
+            const list = document.getElementById('timetable-list');
+            list.innerHTML = '';
+            for(let p=1; p<=6; p++) {
+                const key = `t-day${effectiveDay}-p${p}`;
+                const val = localStorage.getItem(key) || defaultTimetables[p]?.[effectiveDay - 1] || "";
+                
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '10px';
+                item.innerHTML = `
+                    <span style="font-weight:bold; color:#64748B; width:50px;">${p}교시</span>
+                    <input type="text" class="subject-input" value="${val}" onchange="saveData('${key}', this.value)">
+                `;
+                list.appendChild(item);
+            }
+        }
+
+        function resetToTodayBase() {
+            if(confirm('기초 시간표 데이터 기준으로 원복하시겠습니까?')) {
+                for(let p=1; p<=6; p++) {
+                    const key = `t-day${effectiveDay}-p${p}`;
+                    const def = defaultTimetables[p]?.[effectiveDay - 1] || "";
+                    localStorage.setItem(key, def);
+                    const el = document.getElementById(key);
+                    if(el) el.value = def;
+                }
+                updateTodayView();
+            }
+        }
+
+        function saveData(id, val) {
+            localStorage.setItem(id, val);
+        }
+
+        function loadSettings() {
+            ['morning-text', 'notice-text', 'student-ranges', 'no-milk-list', 'seat-avoid-pairs', 'seat-match-pairs', 'matrix-m-top', 'matrix-m-mid', 'matrix-m-bot', 'matrix-f-top', 'matrix-f-mid', 'matrix-f-bot', 'seat-rows', 'seat-columns', 'seat-group-people', 'seat-group-rows', 'seat-group-cols', 'seat-group-count'].forEach(id => {
+                const saved = localStorage.getItem(id);
+                if(saved !== null) {
+                    const el = document.getElementById(id);
+                    if(el) {
+                        if (el.type === 'radio') {
+                            // 라디오버튼인 경우 별도 처리
+                            const rBtn = document.querySelector(`input[name="${el.name}"][value="${saved}"]`);
+                            if (rBtn) rBtn.checked = true;
+                        } else {
+                            el.value = saved;
+                        }
+                    }
+                }
+            });
+            // 라디오버튼 별도 세이브 로드 연동
+            const savedGenderRadio = localStorage.getItem('mix-gender-radio');
+            if (savedGenderRadio) {
+                const rBtn = document.querySelector(`input[name="mix-gender-radio"][value="${savedGenderRadio}"]`);
+                if (rBtn) rBtn.checked = true;
+            }
+            document.querySelectorAll('input[name="mix-gender-radio"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    saveData('mix-gender-radio', e.target.value);
+                });
+            });
+        }
+
+        function changeFontSize(id, val) {
+            document.getElementById(id).style.fontSize = val + 'rem';
+            localStorage.setItem('size_' + id, val);
+        }
+
+        function changeFontFamily(id, val) {
+            document.getElementById(id).style.fontFamily = val;
+            localStorage.setItem('family_' + id, val);
+        }
+
+        function loadFontSettings() {
+            ['morning-text', 'notice-text'].forEach(id => {
+                const size = localStorage.getItem('size_' + id);
+                if(size) {
+                    document.getElementById(id).style.fontSize = size + 'rem';
+                    const el = document.getElementById('size-' + id.split('-')[0]);
+                    if(el) el.value = size;
+                }
+                const family = localStorage.getItem('family_' + id);
+                if(family) {
+                    document.getElementById(id).style.fontFamily = family;
+                    const el = document.getElementById('family-' + id.split('-')[0]);
+                    if(el) el.value = family;
+                }
+            });
+        }
+
+        // 효과음 생성 재생부
+        function playPop() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        function playBeepSingle() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(1000, ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch(e){}
+        }
+
+        function playBeepMultiple(times) {
+            let count = 0;
+            const interval = setInterval(() => {
+                playBeepSingle();
+                count++;
+                if(count >= times) clearInterval(interval);
+            }, 400);
+        }
+
+        // 레이아웃 드래그 앤 드롭 및 크기조절 로직
+        let resizeTarget = null;
+        let startWidth = 0;
+        let startX = 0;
+
+        function initResize(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            resizeTarget = document.getElementById(id);
+            startWidth = resizeTarget.offsetWidth;
+            startX = e.clientX;
+            document.addEventListener('mousemove', doResize);
+            document.addEventListener('mouseup', stopResize);
+        }
+
+        function doResize(e) {
+            if(!resizeTarget) return;
+            const newWidth = startWidth + (e.clientX - startX);
+            resizeTarget.style.width = Math.max(newWidth, 250) + 'px';
+            resizeTarget.style.flexGrow = '0';
+        }
+
+        function stopResize() {
+            if(resizeTarget) {
+                localStorage.setItem(resizeTarget.id + '_width', resizeTarget.style.width);
+            }
+            document.removeEventListener('mousemove', doResize);
+            document.removeEventListener('mouseup', stopResize);
+            resizeTarget = null;
+        }
+
+        function initResizeElements() {
+            ['sect-morning', 'sect-milk', 'sect-letter', 'sect-timetable'].forEach(id => {
+                const savedWidth = localStorage.getItem(id + '_width');
+                const el = document.getElementById(id);
+                if(savedWidth && el) {
+                    el.style.width = savedWidth;
+                    el.style.flexGrow = '0';
+                }
+            });
+        }
+
+        function initDragAndDrop() {
+            const container = document.getElementById('dashboard-main');
+            const cards = document.querySelectorAll('.section-card:not(.full-width)');
+            
+            cards.forEach(card => {
+                card.addEventListener('dragstart', () => card.classList.add('dragging'));
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    saveCardOrder();
+                });
+            });
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
+                const dragging = document.querySelector('.dragging');
+                if (dragging) {
+                    if (afterElement == null) container.appendChild(dragging);
+                    else container.insertBefore(dragging, afterElement);
+                }
+            });
+        }
+
+        function getDragAfterElement(container, x, y) {
+            const draggableElements = [...container.querySelectorAll('.section-card:not(.dragging):not(.full-width)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offsetX = x - box.left - box.width / 2;
+                const offsetY = y - box.top - box.height / 2;
+                if (offsetX < 0 && offsetY < 0 && offsetX > closest.offset) {
+                    return { offset: offsetX, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function saveCardOrder() {
+            const order = [...document.querySelectorAll('.section-card')].map(c => c.id);
+            localStorage.setItem('dashboard_card_order', JSON.stringify(order));
+        }
+
+        function loadCardOrder() {
+            const saved = localStorage.getItem('dashboard_card_order');
+            if(!saved) return;
+            const order = JSON.parse(saved);
+            const container = document.getElementById('dashboard-main');
+            order.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) container.appendChild(el);
+            });
+        }
+    </script>
+</body>
+</html>
