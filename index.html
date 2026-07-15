@@ -297,8 +297,8 @@
     </header>
 
     <div class="settings-panel">
-        <span>🔢 번호 범위: <input type="text" id="student-ranges" value="1-25" style="width:140px;" onchange="buildGrids();"></span>
-        <span>🚫 미급식: <input type="text" id="no-milk-list" value="3, 7" style="width:80px;" onchange="buildGrids()"></span>
+<span>🔢 번호 범위: <input type="text" id="student-ranges" value="1-25" style="width:140px;" onchange="saveData('student-ranges', this.value); buildGrids();"></span>
+<span>🚫 미급식: <input type="text" id="no-milk-list" value="3, 7" style="width:80px;" onchange="saveData('no-milk-list', this.value); buildGrids();"></span>
         <button class="settings-toggle-btn" onclick="toggleBaseTimetableSettings()">📋 기초 시간표 관리</button>
         
         <table id="base-timetable-table" class="base-timetable-settings">
@@ -1501,6 +1501,20 @@ window.addEventListener('DOMContentLoaded', () => {
                 if(el) container.appendChild(el);
             });
         }
+        // 웹페이지가 로드될 때 컴퓨터(브라우저)에 저장된 모든 값을 가져와 화면에 그립니다.
+window.addEventListener('DOMContentLoaded', () => {
+    loadSettings();      // 1. 번호 범위, 미급식 목록, 자리배치 설정 등 텍스트 데이터 복원
+    loadFontSettings();  // 2. 아침활동/알림장 폰트 설정 복원
+    loadCardOrder();     // 3. 카드 순서 배치 복원
+    buildGrids();        // 4. ★복원된 번호 범위와 미급식을 바탕으로 우유/통신문 화면 생성★
+
+    // 저장된 자리 배치 결과가 있다면 화면에 즉시 그려주기
+    const savedSeating = localStorage.getItem('currentSeatingArrangement');
+    if (savedSeating) {
+        currentSeatingArrangement = JSON.parse(savedSeating);
+        renderSeatingView();
+    }
+});
     </script>
 </body>
 </html>
