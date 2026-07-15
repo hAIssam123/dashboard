@@ -259,25 +259,21 @@
         .subject-input { width: 100%; padding: 12px 5px; font-size: 1.6rem; font-weight: 800; text-align: center; background: #E8F0FE; color: #1A73E8; border: none; border-radius: 12px; box-sizing: border-box; }
         .btn-reset { background: var(--accent-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
         #celebration-overlay { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(74, 144, 226, 0.9); color: white; font-size: 12rem; font-weight: bold; justify-content: center; align-items: center; z-index: 10000; cursor: pointer; }
-/* 대형 배치 내부에서 모둠 구역을 나타낼 테두리 스타일 예시 */
-.desk-block {
-    /* 기존 스타일 유지 */
-    transition: all 0.2s;
-}
 
-/* 모둠의 경계면에 시각적 효과를 주기 위한 구분선 설정 예시 */
-.seating-grid-flex {
-    display: grid !important; /* 항상 grid 대형 우선 */
-}
+        .desk-block {
+            transition: all 0.2s;
+        }
 
-/* 모둠 묶음용 가상 스타일 (선택사항) */
-.desk-block.group-border-right {
-    margin-right: 15px; /* 모둠 우측 경계에 여백 추가 */
-}
-.desk-block.group-border-bottom {
-    margin-bottom: 15px; /* 모둠 아래 경계에 여백 추가 */
-}
+        .seating-grid-flex {
+            display: grid !important;
+        }
 
+        .desk-block.group-border-right {
+            margin-right: 15px;
+        }
+        .desk-block.group-border-bottom {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -297,8 +293,8 @@
     </header>
 
     <div class="settings-panel">
-<span>🔢 번호 범위: <input type="text" id="student-ranges" value="1-25" style="width:140px;" onchange="saveData('student-ranges', this.value); buildGrids();"></span>
-<span>🚫 미급식: <input type="text" id="no-milk-list" value="3, 7" style="width:80px;" onchange="saveData('no-milk-list', this.value); buildGrids();"></span>
+        <span>🔢 번호 범위: <input type="text" id="student-ranges" value="1-25" style="width:140px;" onchange="saveData('student-ranges', this.value); buildGrids();"></span>
+        <span>🚫 미급식: <input type="text" id="no-milk-list" value="3, 7" style="width:80px;" onchange="saveData('no-milk-list', this.value); buildGrids();"></span>
         <button class="settings-toggle-btn" onclick="toggleBaseTimetableSettings()">📋 기초 시간표 관리</button>
         
         <table id="base-timetable-table" class="base-timetable-settings">
@@ -375,20 +371,20 @@
                                 <th>하</th>
                             </tr>
                         </thead>
-                     <tbody>
-    <tr>
-        <th>남</th>
-        <td><input type="text" id="matrix-m-top" placeholder="번호" onchange="saveData('matrix-m-top', this.value)"></td>
-        <td><input type="text" id="matrix-m-mid" placeholder="번호" onchange="saveData('matrix-m-mid', this.value)"></td>
-        <td><input type="text" id="matrix-m-bot" placeholder="번호" onchange="saveData('matrix-m-bot', this.value)"></td>
-    </tr>
-    <tr>
-        <th>여</th>
-        <td><input type="text" id="matrix-f-top" placeholder="번호" onchange="saveData('matrix-f-top', this.value)"></td>
-        <td><input type="text" id="matrix-f-mid" placeholder="번호" onchange="saveData('matrix-f-mid', this.value)"></td>
-        <td><input type="text" id="matrix-f-bot" placeholder="번호" onchange="saveData('matrix-f-bot', this.value)"></td>
-    </tr>
-</tbody>
+                        <tbody>
+                            <tr>
+                                <th>남</th>
+                                <td><input type="text" id="matrix-m-top" placeholder="번호" onchange="saveData('matrix-m-top', this.value)"></td>
+                                <td><input type="text" id="matrix-m-mid" placeholder="번호" onchange="saveData('matrix-m-mid', this.value)"></td>
+                                <td><input type="text" id="matrix-m-bot" placeholder="번호" onchange="saveData('matrix-m-bot', this.value)"></td>
+                            </tr>
+                            <tr>
+                                <th>여</th>
+                                <td><input type="text" id="matrix-f-top" placeholder="번호" onchange="saveData('matrix-f-top', this.value)"></td>
+                                <td><input type="text" id="matrix-f-mid" placeholder="번호" onchange="saveData('matrix-f-mid', this.value)"></td>
+                                <td><input type="text" id="matrix-f-bot" placeholder="번호" onchange="saveData('matrix-f-bot', this.value)"></td>
+                            </tr>
+                        </tbody>
                     </table>
                     
                     <button class="timer-btn btn-start" style="width:100%; margin:15px 0 0 0;" onclick="generateSmartSeating()">⚡ 자동 자리 배치 시작</button>
@@ -499,30 +495,27 @@
     <div id="celebration-overlay" onclick="this.style.display='none'">100% 🎉</div>
 
     <script>
-        // 페이지 로드 시 실행될 초기화 코드 추가
-window.addEventListener('DOMContentLoaded', () => {
-    loadSettings();      // 1. localStorage에 저장된 텍스트/입력값 불러오기
-    loadFontSettings();  // 2. 폰트 설정 불러오기
-    loadCardOrder();     // 3. 드래그로 변경한 카드 순서 불러오기
-    buildGrids();        // 4. 불러온 번호 범위 기반으로 우유/가정통신문 그리드 생성
-    
-    // 저장된 자리 배치 데이터가 있다면 화면에 바로 그려주기
-    const savedSeating = localStorage.getItem('currentSeatingArrangement');
-    if (savedSeating) {
-        currentSeatingArrangement = JSON.parse(savedSeating);
-        renderSeatingView();
-    }
-});
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();      
+            loadFontSettings();  
+            loadCardOrder();     
+            buildGrids();        
+            
+            const savedSeating = localStorage.getItem('currentSeatingArrangement');
+            if (savedSeating) {
+                currentSeatingArrangement = JSON.parse(savedSeating);
+                renderSeatingView();
+            }
+        });
         const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
         const today = new Date();
         const todayDay = today.getDay();
-        const effectiveDay = (todayDay === 0 || todayDay === 6) ? 1 : todayDay; // 주말은 월요일 기본값
+        const effectiveDay = (todayDay === 0 || todayDay === 6) ? 1 : todayDay; 
         
-        // 전역 상태 변수들
         let currentSeatingArrangement = [];
         let selectedSeatIndex = null;
         let breakTimer = null;
-        let breakTimeLeft = 600; // 10분
+        let breakTimeLeft = 600; 
         let breakBeepTriggered = false;
 
         let hugeInterval = null;
@@ -549,7 +542,6 @@ window.addEventListener('DOMContentLoaded', () => {
         };
 
         window.onload = function() {
-            // 날짜 표시
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const date = String(today.getDate()).padStart(2, '0');
@@ -561,14 +553,12 @@ window.addEventListener('DOMContentLoaded', () => {
             loadFontSettings();
             buildGrids();
             
-            // 저장된 시안 불러오기
             const savedSeating = localStorage.getItem('currentSeatingArrangement');
             if(savedSeating) {
                 currentSeatingArrangement = JSON.parse(savedSeating);
             }
             renderSeatingView();
 
-            // 기본 활성화 구역
             const savedMainOrder = localStorage.getItem('dashboard_card_order');
             if(!savedMainOrder) {
                 ['morning', 'milk', 'letter', 'timetable', 'notice'].forEach(name => {
@@ -611,7 +601,6 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-break').classList.remove('active');
             document.getElementById('btn-fulltimer').classList.remove('active');
             
-            // 이전에 활성화되어 있던 기본 레이아웃 카드들 복구
             ['morning', 'milk', 'letter', 'timetable', 'notice', 'seating'].forEach(name => {
                 const isVisible = localStorage.getItem(`sect-${name}-visible`) === 'true';
                 if(isVisible || (!localStorage.getItem('dashboard_card_order') && name !== 'seating')) {
@@ -714,32 +703,26 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        /* ⚡ 핵심 자리 배치 알고리즘 엔진 (모둠 및 대형 설정 완벽 반영 버전) */
         function generateSmartSeating() {
             const students = parseStudentRanges();
             if(students.length === 0) return alert('번호 범위에 등록된 학생이 없습니다.');
             
-            // HTML 설정 값 불러오기
             const mixGender = document.querySelector('input[name="mix-gender-radio"]:checked')?.value || 'Y';
             const avoidPairs = parsePairs(document.getElementById('seat-avoid-pairs').value);
             const matchPairs = parsePairs(document.getElementById('seat-match-pairs').value);
             
-            // 모둠 설정 값 불러오기
             const groupPeople = parseInt(document.getElementById('seat-group-people').value) || 0;
             const groupRows = parseInt(document.getElementById('seat-group-rows').value) || 1;
             const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 1;
             const groupCount = parseInt(document.getElementById('seat-group-count').value) || 1;
             
-            // 모둠 사용 여부 판별 (모둠 인원이 0보다 크면 모둠 배치 사용)
             const useGroup = groupPeople > 0;
             
             let bestArrangement = null;
             let bestScore = -99999;
             
-            // 학생 성별/성적 정보 가져오기
             const studentInfo = getStudentInfoMap();
             
-            // 100회 무작위화 후 규칙 채점 수행
             for (let attempt = 0; attempt < 100; attempt++) {
                 let pool = [...students];
                 shuffleArray(pool);
@@ -748,15 +731,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 let studentCoords = {};
                 
                 if (useGroup) {
-                    // 👥 [모둠 배치 모드] 시뮬레이션
                     let sIdx = 0;
                     for (let g = 0; g < groupCount; g++) {
                         for (let r = 0; r < groupRows; r++) {
                             for (let c = 0; c < groupCols; c++) {
-                                // 모둠당 채워야 하는 칸 수 제한
                                 const cellIdxInGroup = r * groupCols + c;
                                 if (cellIdxInGroup < groupPeople && sIdx < pool.length) {
-                                    // 모둠 번호(g), 내부 행(r), 내부 열(c)을 기반으로 좌표 부여
                                     studentCoords[pool[sIdx]] = { 
                                         x: g * groupCols + c, 
                                         y: r, 
@@ -768,7 +748,6 @@ window.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else {
-                    // 📊 [일반 분단/줄 배치 모드] 시뮬레이션 (대형 설정 행X열 사용)
                     const cols = parseInt(document.getElementById('seat-columns').value) || 6;
                     let sIdx = 0;
                     let r = 0;
@@ -778,7 +757,7 @@ window.addEventListener('DOMContentLoaded', () => {
                                 studentCoords[pool[sIdx]] = { 
                                     x: c, 
                                     y: r, 
-                                    group: Math.floor(c / 2) // 짝꿍 기준 임시 그룹화
+                                    group: Math.floor(c / 2) 
                                 };
                                 sIdx++;
                             }
@@ -787,7 +766,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // 2차원 좌표 기반 기피/희망 번호 채점
                 for (let i = 0; i < pool.length; i++) {
                     for (let j = i + 1; j < pool.length; j++) {
                         const s1 = pool[i];
@@ -797,16 +775,13 @@ window.addEventListener('DOMContentLoaded', () => {
                         
                         if (!c1 || !c2) continue;
                         
-                        // 맨해튼 거리 계산 (|x1-x2| + |y1-y2|)
                         const dist = Math.abs(c1.x - c2.x) + Math.abs(c1.y - c2.y);
                         
-                        // 1. 기피 관계인데 바로 옆이나 앞뒤(거리 1.5 이하)에 앉은 경우 감점
                         if (avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
                             if (dist <= 1.5) currentScore -= 1000;
-                            else if (c1.group === c2.group) currentScore -= 400; // 같은 모둠 내 배정 시 감점
+                            else if (c1.group === c2.group) currentScore -= 400; 
                         }
                         
-                        // 2. 도움/희망 관계인데 같은 모둠이거나 근접(거리 1.5 이하)한 경우 가점
                         if (matchPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
                             if (dist <= 1.5) currentScore += 500;
                             else if (c1.group === c2.group) currentScore += 300;
@@ -814,18 +789,15 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // 3. 성별 균등 분배 가점
                 if (mixGender === 'Y') {
                     let genderScore = 0;
                     if (!useGroup) {
-                        // 일반 줄 배치 시 인접한 좌우 짝꿍 성별 다르면 가점
                         for (let i = 0; i < pool.length - 1; i += 2) {
                             const g1 = studentInfo[pool[i]]?.gender;
                             const g2 = studentInfo[pool[i+1]]?.gender;
                             if (g1 && g2 && g1 !== g2) genderScore += 50;
                         }
                     } else {
-                        // 모둠형일 때 모둠 내 남녀 성비 균등화용 가점
                         for (let i = 0; i < pool.length - 1; i += 2) {
                             const g1 = studentInfo[pool[i]]?.gender;
                             const g2 = studentInfo[pool[i+1]]?.gender;
@@ -844,14 +816,12 @@ window.addEventListener('DOMContentLoaded', () => {
             currentSeatingArrangement = bestArrangement;
             localStorage.setItem('currentSeatingArrangement', JSON.stringify(currentSeatingArrangement));
             selectedSeatIndex = null;
-            renderSeatingView(); // 변경된 화면 그리기
+            renderSeatingView(); 
             
-            // 기피 규칙 깨짐 알림 기능
             const alertBox = document.getElementById('seating-alert-box');
             alertBox.style.display = 'none';
             let brokenAlerts = [];
             
-            // 검증 로직 수행 후 경고 처리
             for (let i = 0; i < currentSeatingArrangement.length; i++) {
                 for (let j = i + 1; j < currentSeatingArrangement.length; j++) {
                     const s1 = currentSeatingArrangement[i];
@@ -867,7 +837,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 alertBox.style.display = 'block';
             }
             
-            // 설정값 자동 저장
             saveData('matrix-m-top', document.getElementById('matrix-m-top').value);
             saveData('matrix-m-mid', document.getElementById('matrix-m-mid').value);
             saveData('matrix-m-bot', document.getElementById('matrix-m-bot').value);
@@ -876,75 +845,65 @@ window.addEventListener('DOMContentLoaded', () => {
             saveData('matrix-f-bot', document.getElementById('matrix-f-bot').value);
         }
 
-        /* 🪑 설정에 맞게 화면을 구성하는 렌더러 함수 */
-      function renderSeatingView() {
-    const container = document.getElementById('seating-grid-container');
-    container.innerHTML = '';
-    
-    if (currentSeatingArrangement.length === 0) {
-        container.innerHTML = `<div style="color:#94A3B8; padding: 40px 0;">[자동 자리 배치 시작] 버튼을 누르면 자리가 배치됩니다.</div>`;
-        return;
-    }
-    
-    // 1. 대형 크기(행, 열) 수집 (무조건 대형이 우선!)
-    const totalRows = parseInt(document.getElementById('seat-rows').value) || 5;
-    const totalCols = parseInt(document.getElementById('seat-columns').value) || 6;
-    
-    container.style.display = 'grid';
-    container.style.gridTemplateColumns = `repeat(${totalCols}, 75px)`;
-    container.style.gap = '10px'; // 기본 간격
-    
-    // 모둠 묶기 단위 설정 정보 (예: 가로 2열, 세로 2행 단위로 모둠을 묶음)
-    const groupRows = parseInt(document.getElementById('seat-group-rows').value) || 2;
-    const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 2;
-    const useGrouping = groupRows > 0 && groupCols > 0; // 모둠 묶기 활성화 여부
-    
-    for (let r = 0; r < totalRows; r++) {
-        for (let c = 0; c < totalCols; c++) {
-            const globalIdx = r * totalCols + c;
-            const studentNum = currentSeatingArrangement[globalIdx];
-            const desk = document.createElement('div');
+        function renderSeatingView() {
+            const container = document.getElementById('seating-grid-container');
+            container.innerHTML = '';
             
-            if (studentNum !== undefined) {
-                createDeskBlock(desk, studentNum, globalIdx);
-                
-                // 2. 대형이 배치된 상태에서 모둠 단위로 시각적 "테두리" 또는 "공백" 묶기 처리
-                if (useGrouping) {
-                    // 모둠의 오른쪽 경계면일 때 여백 추가
-                    if ((c + 1) % groupCols === 0 && (c + 1) < totalCols) {
-                        desk.style.marginRight = '15px'; 
-                    }
-                    // 모둠의 아래쪽 경계면일 때 여백 추가
-                    if ((r + 1) % groupRows === 0 && (r + 1) < totalRows) {
-                        desk.style.marginBottom = '15px';
-                    }
+            if (currentSeatingArrangement.length === 0) {
+                container.innerHTML = `<div style="color:#94A3B8; padding: 40px 0;">[자동 자리 배치 시작] 버튼을 누르면 자리가 배치됩니다.</div>`;
+                return;
+            }
+            
+            const totalRows = parseInt(document.getElementById('seat-rows').value) || 5;
+            const totalCols = parseInt(document.getElementById('seat-columns').value) || 6;
+            
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = `repeat(${totalCols}, 75px)`;
+            container.style.gap = '10px'; 
+            
+            const groupRows = parseInt(document.getElementById('seat-group-rows').value) || 2;
+            const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 2;
+            const useGrouping = groupRows > 0 && groupCols > 0; 
+            
+            for (let r = 0; r < totalRows; r++) {
+                for (let c = 0; c < totalCols; c++) {
+                    const globalIdx = r * totalCols + c;
+                    const studentNum = currentSeatingArrangement[globalIdx];
+                    const desk = document.createElement('div');
                     
-                    // 예시: 모둠별로 연한 배경색 번갈아 주기 (시각적 묶음 효과)
-                    const groupRegX = Math.floor(c / groupCols);
-                    const groupRegY = Math.floor(r / groupRows);
-                    const groupID = groupRegY * Math.ceil(totalCols / groupCols) + groupRegX;
-                    
-                    // 모둠 ID에 따라 파스텔톤 배경을 번갈아 부여하여 그룹 느낌 제공
-                    const colors = ['#F1F5F9', '#EFF6FF', '#FEF2F2', '#ECFDF5', '#FFFBEB', '#FDF2F8'];
-                    desk.style.backgroundColor = colors[groupID % colors.length];
-                    desk.style.border = '2px solid #CBD5E1';
-                }
-            } else {
-                desk.className = 'desk-block empty';
-                desk.innerText = '빈자리';
-                
-                // 빈자리에도 동일하게 경계 여백 적용
-                if (useGrouping) {
-                    if ((c + 1) % groupCols === 0 && (c + 1) < totalCols) desk.style.marginRight = '15px';
-                    if ((r + 1) % groupRows === 0 && (r + 1) < totalRows) desk.style.marginBottom = '15px';
+                    if (studentNum !== undefined) {
+                        createDeskBlock(desk, studentNum, globalIdx);
+                        
+                        if (useGrouping) {
+                            if ((c + 1) % groupCols === 0 && (c + 1) < totalCols) {
+                                desk.style.marginRight = '15px'; 
+                            }
+                            if ((r + 1) % groupRows === 0 && (r + 1) < totalRows) {
+                                desk.style.marginBottom = '15px';
+                            }
+                            
+                            const groupRegX = Math.floor(c / groupCols);
+                            const groupRegY = Math.floor(r / groupRows);
+                            const groupID = groupRegY * Math.ceil(totalCols / groupCols) + groupRegX;
+                            
+                            const colors = ['#F1F5F9', '#EFF6FF', '#FEF2F2', '#ECFDF5', '#FFFBEB', '#FDF2F8'];
+                            desk.style.backgroundColor = colors[groupID % colors.length];
+                            desk.style.border = '2px solid #CBD5E1';
+                        }
+                    } else {
+                        desk.className = 'desk-block empty';
+                        desk.innerText = '빈자리';
+                        
+                        if (useGrouping) {
+                            if ((c + 1) % groupCols === 0 && (c + 1) < totalCols) desk.style.marginRight = '15px';
+                            if ((r + 1) % groupRows === 0 && (r + 1) < totalRows) desk.style.marginBottom = '15px';
+                        }
+                    }
+                    container.appendChild(desk);
                 }
             }
-            container.appendChild(desk);
         }
-    }
-}
 
-        /* 개별 학생 책상 블록 구조 생성 */
         function createDeskBlock(element, num, index) {
             const studentInfo = getStudentInfoMap();
             const sData = studentInfo[num] || { gender: 'M', level: '중' };
@@ -963,7 +922,6 @@ window.addEventListener('DOMContentLoaded', () => {
             element.onclick = () => handleSeatClick(index);
         }
 
-        /* 수동 자리 교체 스와프 핸들러 */
         function handleSeatClick(index) {
             if (selectedSeatIndex === null) {
                 selectedSeatIndex = index;
@@ -980,7 +938,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 시간표 로직들
         function updateNextSubjectBanner() {
             const now = new Date();
             const hour = now.getHours();
@@ -993,11 +950,11 @@ window.addEventListener('DOMContentLoaded', () => {
             
             const nextPeriod = Math.min(currentPeriod + 1, 6);
             const key = `t-day${effectiveDay}-p${nextPeriod}`;
-            const nextVal = localStorage.getItem(key) || defaultTimetables[nextPeriod]?.[effectiveDay - 1] || "";
+            const saved = localStorage.getItem(key);
+            const nextVal = saved !== null ? saved : (defaultTimetables[nextPeriod]?.[effectiveDay - 1] || "");
             document.getElementById('next-subject-input').value = nextVal ? `${nextPeriod}교시 [${nextVal}]` : "정보 없음";
         }
 
-        // 쉬는시간 타이머 로직
         function startBreakTimer() {
             if(breakTimer) return;
             breakBeepTriggered = false;
@@ -1057,7 +1014,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 소음 경고판 로직
         function initNoiseMeter() {
             if (audioContext) return alert("이미 활성화되어 있습니다.");
             navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
@@ -1105,7 +1061,6 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('noise-score').innerText = 0;
         }
 
-        // 대형 타이머 로직들
         function startHugeTimer() {
             if(isClockMode) toggleClockMode();
             if(hugeInterval) return;
@@ -1193,7 +1148,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 체크판 구축 및 관리 로직
         function buildGrids() {
             const studentNumbers = parseStudentRanges();
             const noMilk = document.getElementById('no-milk-list').value.split(',').map(x=>parseInt(x.trim()));
@@ -1253,7 +1207,6 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 기초 시간표 관리 로직
         function initBaseTimetableInputs() {
             const tbody = document.getElementById('base-timetable-tbody');
             tbody.innerHTML = '';
@@ -1261,8 +1214,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${p}교시</td>` + [1,2,3,4,5].map(d => {
                     const key = `t-day${d}-p${p}`;
-                    const def = defaultTimetables[p]?.[d-1] || "";
-                    return `<td><input type="text" id="${key}" value="${localStorage.getItem(key) || def}" onchange="saveData('${key}', this.value); updateTodayView();"></td>`;
+                    const saved = localStorage.getItem(key);
+                    const def = saved !== null ? saved : (defaultTimetables[p]?.[d-1] || "");
+                    return `<td><input type="text" id="${key}" value="${def}" onchange="saveData('${key}', this.value); updateTodayView();"></td>`;
                 }).join('');
                 tbody.appendChild(tr);
             }
@@ -1279,7 +1233,8 @@ window.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = '';
             for(let p=1; p<=6; p++) {
                 const key = `t-day${effectiveDay}-p${p}`;
-                const val = localStorage.getItem(key) || defaultTimetables[p]?.[effectiveDay - 1] || "";
+                const saved = localStorage.getItem(key);
+                const val = saved !== null ? saved : (defaultTimetables[p]?.[effectiveDay - 1] || "");
                 
                 const item = document.createElement('div');
                 item.style.display = 'flex';
@@ -1317,7 +1272,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     const el = document.getElementById(id);
                     if(el) {
                         if (el.type === 'radio') {
-                            // 라디오버튼인 경우 별도 처리
                             const rBtn = document.querySelector(`input[name="${el.name}"][value="${saved}"]`);
                             if (rBtn) rBtn.checked = true;
                         } else {
@@ -1326,7 +1280,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-            // 라디오버튼 별도 세이브 로드 연동
             const savedGenderRadio = localStorage.getItem('mix-gender-radio');
             if (savedGenderRadio) {
                 const rBtn = document.querySelector(`input[name="mix-gender-radio"][value="${savedGenderRadio}"]`);
@@ -1366,7 +1319,6 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 효과음 생성 재생부
         function playPop() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1408,7 +1360,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }, 400);
         }
 
-        // 레이아웃 드래그 앤 드롭 및 크기조절 로직
         let resizeTarget = null;
         let startWidth = 0;
         let startX = 0;
@@ -1501,20 +1452,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 if(el) container.appendChild(el);
             });
         }
-        // 웹페이지가 로드될 때 컴퓨터(브라우저)에 저장된 모든 값을 가져와 화면에 그립니다.
-window.addEventListener('DOMContentLoaded', () => {
-    loadSettings();      // 1. 번호 범위, 미급식 목록, 자리배치 설정 등 텍스트 데이터 복원
-    loadFontSettings();  // 2. 아침활동/알림장 폰트 설정 복원
-    loadCardOrder();     // 3. 카드 순서 배치 복원
-    buildGrids();        // 4. ★복원된 번호 범위와 미급식을 바탕으로 우유/통신문 화면 생성★
-
-    // 저장된 자리 배치 결과가 있다면 화면에 즉시 그려주기
-    const savedSeating = localStorage.getItem('currentSeatingArrangement');
-    if (savedSeating) {
-        currentSeatingArrangement = JSON.parse(savedSeating);
-        renderSeatingView();
-    }
-});
     </script>
 </body>
 </html>
