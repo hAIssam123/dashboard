@@ -375,20 +375,20 @@
                                 <th>하</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <th>남</th>
-                                <td><input type="text" id="matrix-m-top" placeholder="번호"></td>
-                                <td><input type="text" id="matrix-m-mid" placeholder="번호"></td>
-                                <td><input type="text" id="matrix-m-bot" placeholder="번호"></td>
-                            </tr>
-                            <tr>
-                                <th>여</th>
-                                <td><input type="text" id="matrix-f-top" placeholder="번호"></td>
-                                <td><input type="text" id="matrix-f-mid" placeholder="번호"></td>
-                                <td><input type="text" id="matrix-f-bot" placeholder="번호"></td>
-                            </tr>
-                        </tbody>
+                     <tbody>
+    <tr>
+        <th>남</th>
+        <td><input type="text" id="matrix-m-top" placeholder="번호" onchange="saveData('matrix-m-top', this.value)"></td>
+        <td><input type="text" id="matrix-m-mid" placeholder="번호" onchange="saveData('matrix-m-mid', this.value)"></td>
+        <td><input type="text" id="matrix-m-bot" placeholder="번호" onchange="saveData('matrix-m-bot', this.value)"></td>
+    </tr>
+    <tr>
+        <th>여</th>
+        <td><input type="text" id="matrix-f-top" placeholder="번호" onchange="saveData('matrix-f-top', this.value)"></td>
+        <td><input type="text" id="matrix-f-mid" placeholder="번호" onchange="saveData('matrix-f-mid', this.value)"></td>
+        <td><input type="text" id="matrix-f-bot" placeholder="번호" onchange="saveData('matrix-f-bot', this.value)"></td>
+    </tr>
+</tbody>
                     </table>
                     
                     <button class="timer-btn btn-start" style="width:100%; margin:15px 0 0 0;" onclick="generateSmartSeating()">⚡ 자동 자리 배치 시작</button>
@@ -499,6 +499,20 @@
     <div id="celebration-overlay" onclick="this.style.display='none'">100% 🎉</div>
 
     <script>
+        // 페이지 로드 시 실행될 초기화 코드 추가
+window.addEventListener('DOMContentLoaded', () => {
+    loadSettings();      // 1. localStorage에 저장된 텍스트/입력값 불러오기
+    loadFontSettings();  // 2. 폰트 설정 불러오기
+    loadCardOrder();     // 3. 드래그로 변경한 카드 순서 불러오기
+    buildGrids();        // 4. 불러온 번호 범위 기반으로 우유/가정통신문 그리드 생성
+    
+    // 저장된 자리 배치 데이터가 있다면 화면에 바로 그려주기
+    const savedSeating = localStorage.getItem('currentSeatingArrangement');
+    if (savedSeating) {
+        currentSeatingArrangement = JSON.parse(savedSeating);
+        renderSeatingView();
+    }
+});
         const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
         const today = new Date();
         const todayDay = today.getDay();
