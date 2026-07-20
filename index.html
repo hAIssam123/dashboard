@@ -139,7 +139,7 @@
         }
 
         .section-card.full-width {
-            width: 100% !important;
+            width: 100%;
             flex-grow: 1;
         }
 
@@ -225,7 +225,6 @@
         .seating-config.hidden { display: none; }
         .seating-view { flex: 2; min-width: 350px; background: #FFF; padding: 20px; border-radius: 15px; border: 2px solid #E2E8F0; text-align: center; }
         
-        /* 배치방식 및 모둠 레이아웃 관련 스타일 */
         .seating-grid-flex { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: center; margin-top: 20px; }
         .seating-group-box { background: #F1F5F9; border: 2px dashed #CBD5E1; border-radius: 12px; padding: 12px; display: grid; gap: 8px; justify-content: center; align-content: center; }
         
@@ -260,20 +259,10 @@
         .btn-reset { background: var(--accent-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
         #celebration-overlay { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(74, 144, 226, 0.9); color: white; font-size: 12rem; font-weight: bold; justify-content: center; align-items: center; z-index: 10000; cursor: pointer; }
 
-        .desk-block {
-            transition: all 0.2s;
-        }
-
-        .seating-grid-flex {
-            display: grid !important;
-        }
-
-        .desk-block.group-border-right {
-            margin-right: 15px;
-        }
-        .desk-block.group-border-bottom {
-            margin-bottom: 15px;
-        }
+        .desk-block { transition: all 0.2s; }
+        .seating-grid-flex { display: grid !important; }
+        .desk-block.group-border-right { margin-right: 15px; }
+        .desk-block.group-border-bottom { margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -704,7 +693,7 @@
             }
         }
 
-        function generateSmartSeating() {
+    function generateSmartSeating() {
             const students = parseStudentRanges();
             if(students.length === 0) return alert('번호 범위에 등록된 학생이 없습니다.');
             
@@ -717,60 +706,105 @@
             const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 1;
             const groupCount = parseInt(document.getElementById('seat-group-count').value) || 1;
             
+            const totalRows = parseInt(document.getElementById('seat-rows').value) || 5;
+            const totalCols = parseInt(document.getElementById('seat-columns').value) || 6;
             const useGroup = groupPeople > 0;
-            
-            let bestArrangement = null;
-            let bestScore = -99999;
             
             const studentInfo = getStudentInfoMap();
             
-            for (let attempt = 0; attempt < 100; attempt++) {
-                let pool = [...students];
-                shuffleArray(pool);
+            let bestArrangement = null;
+            let bestScore = -9999999;
+            
+            // 정밀 연산 및 최적 자리 도출을 위해 시도 횟수를 5,000회로 확장
+            for (let attempt = 0; attempt < 5000; attempt++) {
+                // 남학생과 여학생 풀을 각각 분리하여 생성합니다.
+                let malePool = students.filter(sNum => (studentInfo[sNum]?.gender === 'M'));
+                let femalePool = students.filter(sNum => (studentInfo[sNum]?.gender === 'F'));
+                let unknownPool = students.filter(sNum => !studentInfo[sNum]?.gender); // 성별 미지정 학생
+                
+                shuffleArray(malePool);
+                shuffleArray(femalePool);
+                shuffleArray(unknownPool);
                 
                 let currentScore = 0;
                 let studentCoords = {};
+                let groupContents = {}; // 각 모둠(그룹)별 포함된 학생 풀 수집용
+                
+                // 임시로 칸별 배치를 저장할 1차원 배열 (배치 완료 후 결과로 변환)
+                let tempArrangement = new Array(totalRows * totalCols).fill(null);
                 
                 if (useGroup) {
+                    // 모둠을 사용하는 경우의 열 번호를 계산하여 배치
                     let sIdx = 0;
+                    // 각 모둠의 칸들이 전체 격자(totalCols)에서 몇 번째 '열(Column)'에 위치하는지 추적하며 분배
                     for (let g = 0; g < groupCount; g++) {
+                        groupContents[g] = [];
                         for (let r = 0; r < groupRows; r++) {
                             for (let c = 0; c < groupCols; c++) {
                                 const cellIdxInGroup = r * groupCols + c;
-                                if (cellIdxInGroup < groupPeople && sIdx < pool.length) {
-                                    studentCoords[pool[sIdx]] = { 
-                                        x: g * groupCols + c, 
-                                        y: r, 
-                                        group: g 
-                                    };
-                                    sIdx++;
+                                if (cellIdxInGroup < groupPeople) {
+                                    const globalCol = (g % Math.ceil(totalCols / groupCols)) * groupCols + c;
+                                    const globalRow = Math.floor(g / Math.ceil(totalCols / groupCols)) * groupRows + r;
+                                    const globalIdx = globalRow * totalCols + globalCol;
+                                    
+                                    let chosenStudent = null;
+                                    if (mixGender === 'Y') {
+                                        // 홀수 열(1, 3, 5...열 / 인덱스로는 0, 2, 4...)은 남자, 짝수 열은 여자
+                                        if (globalCol % 2 === 0) {
+                                            chosenStudent = malePool.shift() || femalePool.shift() || unknownPool.shift();
+                                        } else {
+                                            chosenStudent = femalePool.shift() || malePool.shift() || unknownPool.shift();
+                                        }
+                                    } else {
+                                        chosenStudent = malePool.shift() || femalePool.shift() || unknownPool.shift();
+                                    }
+                                    
+                                    if (chosenStudent !== undefined && chosenStudent !== null) {
+                                        tempArrangement[globalIdx] = chosenStudent;
+                                        studentCoords[chosenStudent] = { x: globalCol, y: globalRow, group: g };
+                                        groupContents[g].push(chosenStudent);
+                                    }
                                 }
                             }
                         }
                     }
                 } else {
-                    const cols = parseInt(document.getElementById('seat-columns').value) || 6;
-                    let sIdx = 0;
-                    let r = 0;
-                    while (sIdx < pool.length) {
-                        for (let c = 0; c < cols; c++) {
-                            if (sIdx < pool.length) {
-                                studentCoords[pool[sIdx]] = { 
-                                    x: c, 
-                                    y: r, 
-                                    group: Math.floor(c / 2) 
-                                };
-                                sIdx++;
+                    // 모둠을 사용하지 않고 대형으로 배치하는 경우
+                    for (let r = 0; r < totalRows; r++) {
+                        for (let c = 0; c < totalCols; c++) {
+                            const globalIdx = r * totalCols + c;
+                            let chosenStudent = null;
+                            
+                            if (mixGender === 'Y') {
+                                // c % 2 === 0 이면 1열, 3열, 5열 -> 남자 / 아니면 2열, 4열, 6열 -> 여자
+                                if (c % 2 === 0) {
+                                    chosenStudent = malePool.shift() || femalePool.shift() || unknownPool.shift();
+                                } else {
+                                    chosenStudent = femalePool.shift() || malePool.shift() || unknownPool.shift();
+                                }
+                            } else {
+                                chosenStudent = malePool.shift() || femalePool.shift() || unknownPool.shift();
+                            }
+                            
+                            if (chosenStudent !== undefined && chosenStudent !== null) {
+                                tempArrangement[globalIdx] = chosenStudent;
+                                const gId = Math.floor(c / 2);
+                                if (!groupContents[gId]) groupContents[gId] = [];
+                                studentCoords[chosenStudent] = { x: c, y: r, group: gId };
+                                groupContents[gId].push(chosenStudent);
                             }
                         }
-                        r++;
                     }
                 }
                 
-                for (let i = 0; i < pool.length; i++) {
-                    for (let j = i + 1; j < pool.length; j++) {
-                        const s1 = pool[i];
-                        const s2 = pool[j];
+                // 조건 계산을 위해 유효한 학생 리스트 추출
+                let activeStudents = tempArrangement.filter(s => s !== null);
+                
+                // 2단계: 기피 학생 및 도움 학생 조건 정밀 검증
+                for (let i = 0; i < activeStudents.length; i++) {
+                    for (let j = i + 1; j < activeStudents.length; j++) {
+                        const s1 = activeStudents[i];
+                        const s2 = activeStudents[j];
                         const c1 = studentCoords[s1];
                         const c2 = studentCoords[s2];
                         
@@ -778,39 +812,60 @@
                         
                         const dist = Math.abs(c1.x - c2.x) + Math.abs(c1.y - c2.y);
                         
+                        // 기피 학생 연산 규칙: 인접하거나 동일 모둠일 시 강력한 벌점 부과
                         if (avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
-                            if (dist <= 1.5) currentScore -= 1000;
-                            else if (c1.group === c2.group) currentScore -= 400; 
+                            if (dist <= 1.5) currentScore -= 5000;
+                            if (c1.group === c2.group) currentScore -= 3000;
                         }
                         
+                        // 도움 학생 연산 규칙: 동일 모둠 및 인접 배치 시 가산점 부여
                         if (matchPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
-                            if (dist <= 1.5) currentScore += 500;
-                            else if (c1.group === c2.group) currentScore += 300;
+                            if (c1.group === c2.group) currentScore += 2000;
+                            if (dist <= 1.5) currentScore += 1000;
                         }
                     }
                 }
                 
+                // 3단계: 열 단위 남녀 배치가 완벽하게 되었는지 정밀 검증 배점
                 if (mixGender === 'Y') {
-                    let genderScore = 0;
-                    if (!useGroup) {
-                        for (let i = 0; i < pool.length - 1; i += 2) {
-                            const g1 = studentInfo[pool[i]]?.gender;
-                            const g2 = studentInfo[pool[i+1]]?.gender;
-                            if (g1 && g2 && g1 !== g2) genderScore += 50;
+                    activeStudents.forEach(sNum => {
+                        const coords = studentCoords[sNum];
+                        const gender = studentInfo[sNum]?.gender;
+                        if (coords && gender) {
+                            if (coords.x % 2 === 0 && gender === 'M') currentScore += 100;
+                            else if (coords.x % 2 === 1 && gender === 'F') currentScore += 100;
+                            else currentScore -= 1000; // 성별 열 배치가 어긋나면 감점
                         }
-                    } else {
-                        for (let i = 0; i < pool.length - 1; i += 2) {
-                            const g1 = studentInfo[pool[i]]?.gender;
-                            const g2 = studentInfo[pool[i+1]]?.gender;
-                            if (g1 && g2 && g1 !== g2) genderScore += 20;
-                        }
-                    }
-                    currentScore += genderScore;
+                    });
                 }
                 
+                // 4단계: 모둠 기반 성적분포(상·중·하) 균등 검산 연산 추가
+                for (let gId in groupContents) {
+                    const members = groupContents[gId];
+                    if (members.length === 0) continue;
+                    
+                    let topCount = 0;
+                    let midCount = 0;
+                    let botCount = 0;
+                    
+                    members.forEach(sNum => {
+                        const lvl = studentInfo[sNum]?.level;
+                        if (lvl === '상') topCount++;
+                        else if (lvl === '중') midCount++;
+                        else if (lvl === '하') botCount++;
+                    });
+                    
+                    if (topCount > 0 && botCount > 0) currentScore += 400; // 상-하 상호보완 보너스
+                    if (topCount > (members.length / 2)) currentScore -= 600; // 특정 모둠에 상위권 독점 방지
+                    if (botCount > (members.length / 2)) currentScore -= 600; // 특정 모둠에 하위권 몰림 방지
+                    
+                    currentScore += (midCount * 100);
+                }
+                
+                // 최고 점수 조합 갱신
                 if (currentScore > bestScore) {
                     bestScore = currentScore;
-                    bestArrangement = [...pool];
+                    bestArrangement = [...tempArrangement];
                 }
             }
             
@@ -823,11 +878,45 @@
             alertBox.style.display = 'none';
             let brokenAlerts = [];
             
+            // 검증용 조건 재확인 및 경고 표시 로직
+            let finalCoords = {};
+            if (useGroup) {
+                for (let g = 0; g < groupCount; g++) {
+                    for (let r = 0; r < groupRows; r++) {
+                        for (let c = 0; c < groupCols; c++) {
+                            const globalCol = (g % Math.ceil(totalCols / groupCols)) * groupCols + c;
+                            const globalRow = Math.floor(g / Math.ceil(totalCols / groupCols)) * groupRows + r;
+                            const globalIdx = globalRow * totalCols + globalCol;
+                            const sNum = currentSeatingArrangement[globalIdx];
+                            if (sNum) {
+                                finalCoords[sNum] = { x: globalCol, y: globalRow, group: g };
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (let r = 0; r < totalRows; r++) {
+                    for (let c = 0; c < totalCols; c++) {
+                        const globalIdx = r * totalCols + c;
+                        const sNum = currentSeatingArrangement[globalIdx];
+                        if (sNum) {
+                            finalCoords[sNum] = { x: c, y: r, group: Math.floor(c / 2) };
+                        }
+                    }
+                }
+            }
+            
             for (let i = 0; i < currentSeatingArrangement.length; i++) {
                 for (let j = i + 1; j < currentSeatingArrangement.length; j++) {
                     const s1 = currentSeatingArrangement[i];
                     const s2 = currentSeatingArrangement[j];
-                    if (Math.abs(i - j) <= 2 && avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
+                    if(!s1 || !s2) continue;
+                    const c1 = finalCoords[s1];
+                    const c2 = finalCoords[s2];
+                    if (!c1 || !c2) continue;
+                    
+                    const dist = Math.abs(c1.x - c2.x) + Math.abs(c1.y - c2.y);
+                    if ((dist <= 1.5 || c1.group === c2.group) && avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
                         brokenAlerts.push(`⚠️ 경고: 기피 등록된 [${s1}번]과 [${s2}번]이 인접하게 배치되었습니다.`);
                     }
                 }
@@ -1392,7 +1481,7 @@
         }
 
         function initResizeElements() {
-            ['sect-morning', 'sect-milk', 'sect-letter', 'sect-timetable'].forEach(id => {
+            ['sect-morning', 'sect-milk', 'sect-letter', 'sect-timetable', 'sect-notice'].forEach(id => {
                 const savedWidth = localStorage.getItem(id + '_width');
                 const el = document.getElementById(id);
                 if(savedWidth && el) {
