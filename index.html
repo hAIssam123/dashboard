@@ -284,6 +284,8 @@
     <div class="settings-panel">
         <span>🔢 번호 범위: <input type="text" id="student-ranges" value="1-25" style="width:140px;" onchange="saveData('student-ranges', this.value); buildGrids();"></span>
         <span>🚫 미급식: <input type="text" id="no-milk-list" value="3, 7" style="width:80px;" onchange="saveData('no-milk-list', this.value); buildGrids();"></span>
+        <!-- 추가된 부분: 전학생 결번 설정란 -->
+        <span>❌ 전학생(결번): <input type="text" id="moved-student-list" value="" placeholder="예: 5, 12" style="width:100px;" onchange="saveData('moved-student-list', this.value); buildGrids();"></span>
         <button class="settings-toggle-btn" onclick="toggleBaseTimetableSettings()">📋 기초 시간표 관리</button>
         
         <table id="base-timetable-table" class="base-timetable-settings">
@@ -637,6 +639,11 @@
                     if(!isNaN(num)) students.push(num);
                 }
             });
+            
+            // 전학생 결번 제외 로직 적용
+            const movedStudents = parseTextToNumbers(document.getElementById('moved-student-list').value);
+            students = students.filter(s => !movedStudents.includes(s));
+
             return [...new Set(students)].sort((a,b)=>a-b);
         }
 
@@ -693,8 +700,8 @@
             }
         }
 
-    function generateSmartSeating() {
-            const students = parseStudentRanges();
+        function generateSmartSeating() {
+            const students = parseStudentRanges(); // 이미 결번이 제외된 학생 리스트 가져옴
             if(students.length === 0) return alert('번호 범위에 등록된 학생이 없습니다.');
             
             const mixGender = document.querySelector('input[name="mix-gender-radio"]:checked')?.value || 'Y';
@@ -715,12 +722,10 @@
             let bestArrangement = null;
             let bestScore = -9999999;
             
-            // 정밀 연산 및 최적 자리 도출을 위해 시도 횟수를 5,000회로 확장
             for (let attempt = 0; attempt < 5000; attempt++) {
-                // 남학생과 여학생 풀을 각각 분리하여 생성합니다.
                 let malePool = students.filter(sNum => (studentInfo[sNum]?.gender === 'M'));
                 let femalePool = students.filter(sNum => (studentInfo[sNum]?.gender === 'F'));
-                let unknownPool = students.filter(sNum => !studentInfo[sNum]?.gender); // 성별 미지정 학생
+                let unknownPool = students.filter(sNum => !studentInfo[sNum]?.gender);
                 
                 shuffleArray(malePool);
                 shuffleArray(femalePool);
@@ -728,15 +733,11 @@
                 
                 let currentScore = 0;
                 let studentCoords = {};
-                let groupContents = {}; // 각 모둠(그룹)별 포함된 학생 풀 수집용
+                let groupContents = {}; 
                 
-                // 임시로 칸별 배치를 저장할 1차원 배열 (배치 완료 후 결과로 변환)
                 let tempArrangement = new Array(totalRows * totalCols).fill(null);
                 
                 if (useGroup) {
-                    // 모둠을 사용하는 경우의 열 번호를 계산하여 배치
-                    let sIdx = 0;
-                    // 각 모둠의 칸들이 전체 격자(totalCols)에서 몇 번째 '열(Column)'에 위치하는지 추적하며 분배
                     for (let g = 0; g < groupCount; g++) {
                         groupContents[g] = [];
                         for (let r = 0; r < groupRows; r++) {
@@ -749,7 +750,6 @@
                                     
                                     let chosenStudent = null;
                                     if (mixGender === 'Y') {
-                                        // 홀수 열(1, 3, 5...열 / 인덱스로는 0, 2, 4...)은 남자, 짝수 열은 여자
                                         if (globalCol % 2 === 0) {
                                             chosenStudent = malePool.shift() || femalePool.shift() || unknownPool.shift();
                                         } else {
@@ -769,14 +769,12 @@
                         }
                     }
                 } else {
-                    // 모둠을 사용하지 않고 대형으로 배치하는 경우
                     for (let r = 0; r < totalRows; r++) {
                         for (let c = 0; c < totalCols; c++) {
                             const globalIdx = r * totalCols + c;
                             let chosenStudent = null;
                             
                             if (mixGender === 'Y') {
-                                // c % 2 === 0 이면 1열, 3열, 5열 -> 남자 / 아니면 2열, 4열, 6열 -> 여자
                                 if (c % 2 === 0) {
                                     chosenStudent = malePool.shift() || femalePool.shift() || unknownPool.shift();
                                 } else {
@@ -797,10 +795,8 @@
                     }
                 }
                 
-                // 조건 계산을 위해 유효한 학생 리스트 추출
                 let activeStudents = tempArrangement.filter(s => s !== null);
                 
-                // 2단계: 기피 학생 및 도움 학생 조건 정밀 검증
                 for (let i = 0; i < activeStudents.length; i++) {
                     for (let j = i + 1; j < activeStudents.length; j++) {
                         const s1 = activeStudents[i];
@@ -812,13 +808,11 @@
                         
                         const dist = Math.abs(c1.x - c2.x) + Math.abs(c1.y - c2.y);
                         
-                        // 기피 학생 연산 규칙: 인접하거나 동일 모둠일 시 강력한 벌점 부과
                         if (avoidPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
                             if (dist <= 1.5) currentScore -= 5000;
                             if (c1.group === c2.group) currentScore -= 3000;
                         }
                         
-                        // 도움 학생 연산 규칙: 동일 모둠 및 인접 배치 시 가산점 부여
                         if (matchPairs.some(p => (p.includes(s1) && p.includes(s2)))) {
                             if (c1.group === c2.group) currentScore += 2000;
                             if (dist <= 1.5) currentScore += 1000;
@@ -826,7 +820,6 @@
                     }
                 }
                 
-                // 3단계: 열 단위 남녀 배치가 완벽하게 되었는지 정밀 검증 배점
                 if (mixGender === 'Y') {
                     activeStudents.forEach(sNum => {
                         const coords = studentCoords[sNum];
@@ -834,12 +827,11 @@
                         if (coords && gender) {
                             if (coords.x % 2 === 0 && gender === 'M') currentScore += 100;
                             else if (coords.x % 2 === 1 && gender === 'F') currentScore += 100;
-                            else currentScore -= 1000; // 성별 열 배치가 어긋나면 감점
+                            else currentScore -= 1000;
                         }
                     });
                 }
                 
-                // 4단계: 모둠 기반 성적분포(상·중·하) 균등 검산 연산 추가
                 for (let gId in groupContents) {
                     const members = groupContents[gId];
                     if (members.length === 0) continue;
@@ -855,14 +847,13 @@
                         else if (lvl === '하') botCount++;
                     });
                     
-                    if (topCount > 0 && botCount > 0) currentScore += 400; // 상-하 상호보완 보너스
-                    if (topCount > (members.length / 2)) currentScore -= 600; // 특정 모둠에 상위권 독점 방지
-                    if (botCount > (members.length / 2)) currentScore -= 600; // 특정 모둠에 하위권 몰림 방지
+                    if (topCount > 0 && botCount > 0) currentScore += 400;
+                    if (topCount > (members.length / 2)) currentScore -= 600;
+                    if (botCount > (members.length / 2)) currentScore -= 600;
                     
                     currentScore += (midCount * 100);
                 }
                 
-                // 최고 점수 조합 갱신
                 if (currentScore > bestScore) {
                     bestScore = currentScore;
                     bestArrangement = [...tempArrangement];
@@ -878,7 +869,6 @@
             alertBox.style.display = 'none';
             let brokenAlerts = [];
             
-            // 검증용 조건 재확인 및 경고 표시 로직
             let finalCoords = {};
             if (useGroup) {
                 for (let g = 0; g < groupCount; g++) {
@@ -955,13 +945,22 @@
             const groupCols = parseInt(document.getElementById('seat-group-cols').value) || 2;
             const useGrouping = groupRows > 0 && groupCols > 0; 
             
+            // 실시간 결번 리스트 파악하여, 이미 배치된 자리 중 결번이 있다면 빈자리 처리
+            const movedStudents = parseTextToNumbers(document.getElementById('moved-student-list').value);
+
             for (let r = 0; r < totalRows; r++) {
                 for (let c = 0; c < totalCols; c++) {
                     const globalIdx = r * totalCols + c;
-                    const studentNum = currentSeatingArrangement[globalIdx];
+                    let studentNum = currentSeatingArrangement[globalIdx];
+                    
+                    // 만약 배치 결과에 결번 학생이 들어있다면 빈칸으로 마스킹
+                    if (studentNum && movedStudents.includes(studentNum)) {
+                        studentNum = undefined;
+                    }
+
                     const desk = document.createElement('div');
                     
-                    if (studentNum !== undefined) {
+                    if (studentNum !== undefined && studentNum !== null) {
                         createDeskBlock(desk, studentNum, globalIdx);
                         
                         if (useGrouping) {
@@ -1239,7 +1238,7 @@
         }
 
         function buildGrids() {
-            const studentNumbers = parseStudentRanges();
+            const studentNumbers = parseStudentRanges(); // 여기에 이미 전학생 결번 제외 로직이 녹아있음
             const noMilk = document.getElementById('no-milk-list').value.split(',').map(x=>parseInt(x.trim()));
             
             const mGrid = document.getElementById('milk-grid');
@@ -1262,6 +1261,9 @@
                 item.onclick = () => toggleCheck(item, null, 'letter');
                 lGrid.appendChild(item);
             });
+            
+            // 전학생 명단이 바뀌면 자리배치 화면도 실시간 동기화
+            renderSeatingView();
         }
 
         function toggleCheck(el, sound, type) {
@@ -1356,7 +1358,7 @@
         }
 
         function loadSettings() {
-            ['morning-text', 'notice-text', 'student-ranges', 'no-milk-list', 'seat-avoid-pairs', 'seat-match-pairs', 'matrix-m-top', 'matrix-m-mid', 'matrix-m-bot', 'matrix-f-top', 'matrix-f-mid', 'matrix-f-bot', 'seat-rows', 'seat-columns', 'seat-group-people', 'seat-group-rows', 'seat-group-cols', 'seat-group-count'].forEach(id => {
+            ['morning-text', 'notice-text', 'student-ranges', 'no-milk-list', 'moved-student-list', 'seat-avoid-pairs', 'seat-match-pairs', 'matrix-m-top', 'matrix-m-mid', 'matrix-m-bot', 'matrix-f-top', 'matrix-f-mid', 'matrix-f-bot', 'seat-rows', 'seat-columns', 'seat-group-people', 'seat-group-rows', 'seat-group-cols', 'seat-group-count'].forEach(id => {
                 const saved = localStorage.getItem(id);
                 if(saved !== null) {
                     const el = document.getElementById(id);
